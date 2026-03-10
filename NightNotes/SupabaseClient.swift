@@ -4,10 +4,9 @@ import Supabase
 class SupabaseClient {
     static let shared = SupabaseClient()
     
-    // TODO: Replace with your credentials
-    private let supabaseURL = URL(string: "https://YOUR_PROJECT.supabase.co")!
-    private let supabaseKey = "YOUR_ANON_KEY"
-    private let baseURL = "https://YOUR_NETLIFY_SITE.netlify.app"
+    private let supabaseURL = URL(string: "https://mctzqyenjmmxgdvrrsyr.supabase.co")!
+    private let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jdHpxeWVuam1teGdkdnJyc3lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3ODEzMzQsImV4cCI6MjA4NTM1NzMzNH0.2hsbPilDK5Hvh04ECZg6IkETPbRxkX6NFOPvZV77sOQ"
+    private let baseURL = "https://trynightnotes.com"
     
     lazy var client: Supabase.SupabaseClient = {
         Supabase.SupabaseClient(supabaseURL: supabaseURL, supabaseKey: supabaseKey)
@@ -21,7 +20,7 @@ class SupabaseClient {
     func interpret(dream: String, mode: InterpretationMode) async throws -> InterpretationResponse {
         guard let session = try? await auth.session else { throw APIError.unauthorized }
         
-        let url = URL(string: "\(baseURL)/.netlify/functions/interpret")!
+        let url = URL(string: "\(baseURL)/api/interpret")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
