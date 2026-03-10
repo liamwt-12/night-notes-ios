@@ -12,6 +12,8 @@ workflows:
         distribution_type: app_store
         bundle_identifier: uk.nightnotes.app
       xcode: 15.2
+      vars:
+        BUNDLE_ID: "uk.nightnotes.app"
 
     scripts:
       - name: Install XcodeGen
@@ -29,12 +31,6 @@ workflows:
       - name: Set up signing
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "uk.nightnotes.app" \
-            --type IOS_APP_STORE \
-            --create \
-            --certificate-key @env:APP_STORE_CONNECT_PRIVATE_KEY \
-            --issuer-id c584f62c-5d0d-49f9-895d-de474583cbe8 \
-            --key-id F5F4QC3YX7
           keychain add-certificates
           xcode-project use-profiles
 
