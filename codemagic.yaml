@@ -29,7 +29,10 @@ workflows:
       - name: Set up signing
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "uk.nightnotes.app" --type IOS_APP_STORE
+          app-store-connect fetch-signing-files "uk.nightnotes.app" \
+            --type IOS_APP_STORE \
+            --create \
+            --certificate-key=PRIVATE
           keychain add-certificates
           xcode-project use-profiles
       
