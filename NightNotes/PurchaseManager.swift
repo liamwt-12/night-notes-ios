@@ -47,7 +47,7 @@ class PurchaseManager: ObservableObject {
         }
     }
     
-    private func handlePurchase(product: Product, transaction: Transaction) async {
+    private func handlePurchase(product: Product, transaction: StoreKit.Transaction) async {
         let supabase = SupabaseClient.shared
         guard let session = try? await supabase.auth.session else { return }
         
@@ -55,8 +55,8 @@ class PurchaseManager: ObservableObject {
             let tokens = product.id.contains("10") ? 10 : 3
             try? await supabase.database.rpc("add_tokens", params: [
                 "user_uuid": session.user.id.uuidString,
-                "token_count": tokens,
-                "amount": product.price,
+                "token_count": String(tokens),
+                "amount": "\(product.price)",
                 "transaction_id": String(transaction.id)
             ]).execute()
         } else if product.type == .autoRenewable {
