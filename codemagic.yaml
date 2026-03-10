@@ -11,7 +11,7 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: uk.nightnotes.app
-      xcode: 15.2
+      xcode: latest
       vars:
         BUNDLE_ID: "uk.nightnotes.app"
 
