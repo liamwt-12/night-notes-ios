@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m1
     
     integrations:
-      app_store_connect: Codemagic
+      app_store_connect: DelayRepay Codemagic
     
     environment:
       ios_signing:
