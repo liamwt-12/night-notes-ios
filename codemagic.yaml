@@ -26,15 +26,18 @@ workflows:
             -project "NightNotes.xcodeproj" \
             -scheme "NightNotes"
       
-      - name: Set up signing
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "uk.nightnotes.app" \
-            --type IOS_APP_STORE \
-            --create \
-            --certificate-key=PRIVATE
-          keychain add-certificates
-          xcode-project use-profiles
+         - name: Set up signing
+      script: |
+        keychain initialize
+        app-store-connect fetch-signing-files "uk.nightnotes.app" \
+          --type IOS_APP_STORE \
+          --create \
+          --certificate-key @env:APP_STORE_CONNECT_PRIVATE_KEY \
+          --issuer-id c584f62c-5d0d-49f9-895d-de474583cbe8 \
+          --key-id F5F4QC3YX7
+        keychain add-certificates
+        xcode-project use-profiles
+
       
       - name: Build IPA
         script: |
