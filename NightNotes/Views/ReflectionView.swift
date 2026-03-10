@@ -18,7 +18,7 @@ struct ReflectionView: View {
                         }.font(Theme.captionFont).foregroundColor(Theme.textSecondary)
                     }.padding(.top, 20)
                     
-                    Text(""\(dreamContent)"")
+                    Text("\"\(dreamContent)\"")
                         .font(Theme.bodySerifFont.italic()).foregroundColor(Theme.textSecondary)
                         .lineSpacing(6).padding(.top, 40).padding(.bottom, 40)
                     
