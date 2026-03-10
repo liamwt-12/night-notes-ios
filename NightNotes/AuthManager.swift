@@ -15,10 +15,9 @@ class AuthManager: ObservableObject {
     func checkSession() async {
         isLoading = true
         do {
-            if let session = try await supabase.auth.session {
-                await fetchProfile(userId: session.user.id)
-                isAuthenticated = true
-            }
+            let session = try await supabase.auth.session
+            await fetchProfile(userId: session.user.id)
+            isAuthenticated = true
         } catch { isAuthenticated = false }
         isLoading = false
     }
