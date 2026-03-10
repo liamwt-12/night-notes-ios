@@ -1,0 +1,31 @@
+name: NightNotes
+options:
+  bundleIdPrefix: uk.nightnotes
+  deploymentTarget:
+    iOS: "16.0"
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: U5AU32RQ46
+    SWIFT_VERSION: "5.9"
+
+targets:
+  NightNotes:
+    type: application
+    platform: iOS
+    sources:
+      - path: NightNotes
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.nightnotes.app
+        INFOPLIST_FILE: NightNotes/Info.plist
+        CODE_SIGN_ENTITLEMENTS: NightNotes/NightNotes.entitlements
+    dependencies:
+      - package: Supabase
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: "2.0.0"
