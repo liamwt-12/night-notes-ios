@@ -9,32 +9,19 @@ struct DreamEntryView: View {
     @EnvironmentObject var store:   DreamStore
     @EnvironmentObject var purchase: PurchaseManager
 
-    // Text
     @State private var dreamText = ""
     @FocusState private var textFocused: Bool
 
-    // Unveil state machine
     enum Phase { case entry, unveiling, reading }
     @State private var phase: Phase = .entry
 
-    // Aurora control (warmed during unveil)
     @State private var auroraHueShift: Double  = 0
     @State private var auroraScale:    Double  = 1.0
-
-    // Orb animation
     @State private var orbScale:   CGFloat = 0.05
     @State private var orbOpacity: Double  = 0
-
-    // Result lines stagger
     @State private var lineVisible = [false, false, false, false, false]
-
-    // Current dream being processed
     @State private var activeDream: DreamEntry?
-
-    // Paywall
     @State private var showPaywall = false
-
-    // Error
     @State private var errorMessage: String?
 
     var body: some View {
@@ -46,15 +33,12 @@ struct DreamEntryView: View {
             case .entry:
                 entryContent
                     .transition(.opacity)
-
             case .unveiling:
                 unveilingContent
                     .transition(.opacity)
-
             case .reading:
                 if let dream = activeDream, let interp = dream.interpretation {
                     ReflectionView(dream: dream, interpretation: interp, lineVisible: lineVisible) {
-                        // Reset back to entry
                         resetToEntry()
                     }
                     .transition(.opacity)
@@ -73,16 +57,12 @@ struct DreamEntryView: View {
 
     private var entryContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-
-            // Top bar
             HStack {
                 Text("night notes")
                     .font(NNFont.ui(11))
                     .tracking(6)
                     .foregroundColor(NNColour.textMuted)
-
                 Spacer()
-
                 if let user = auth.user, !user.subscriptionActive {
                     Text("\(user.interpretationsRemaining) left")
                         .font(NNFont.ui(10))
@@ -97,13 +77,11 @@ struct DreamEntryView: View {
             }
             .padding(.bottom, 32)
 
-            // Heading
             VStack(alignment: .leading, spacing: 8) {
                 Text("Whatever you caught —")
                     .font(NNFont.ui(12))
                     .tracking(2)
                     .foregroundColor(NNColour.textMuted)
-
                 Text("Write it down.")
                     .font(NNFont.display(50))
                     .foregroundColor(NNColour.textPrimary)
@@ -111,14 +89,12 @@ struct DreamEntryView: View {
             }
             .padding(.bottom, 24)
 
-            // Time stamp
             Text(timeLabel())
                 .font(NNFont.ui(10))
                 .tracking(2)
                 .foregroundColor(NNColour.textMuted)
                 .padding(.bottom, 14)
 
-            // Dream text field
             ZStack(alignment: .topLeading) {
                 if dreamText.isEmpty {
                     Text("The dream is still close…")
@@ -136,12 +112,26 @@ struct DreamEntryView: View {
                     .lineSpacing(4)
             }
             .frame(maxHeight: .infinity)
+            .onTapGesture {
+                textFocused = true
+            }
 
-            // Bottom controls
             VStack(spacing: 16) {
                 Hairline()
 
-                // Unveil button — outline style, no fill
+                // Dismiss keyboard button — only shows when keyboard is up
+                if textFocused {
+                    Button(action: { textFocused = false }) {
+                        Text("Done")
+                            .font(NNFont.ui(11))
+                            .tracking(3)
+                            .foregroundColor(NNColour.textMuted)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                    }
+                    .transition(.opacity)
+                }
+
                 Button(action: handleUnveil) {
                     Text("Unveil")
                         .font(.custom("PlayfairDisplay-Italic", size: 18))
@@ -175,11 +165,11 @@ struct DreamEntryView: View {
         .padding(.horizontal, 26)
         .padding(.top, 56)
         .padding(.bottom, 40)
-        .onTapGesture { textFocused = false }
+        .animation(.easeInOut(duration: 0.2), value: textFocused)
     }
 
     // ─────────────────────────────────────────
-    // MARK: - Unveiling Content (orb bloom)
+    // MARK: - Unveiling Content
     // ─────────────────────────────────────────
 
     private var unveilingContent: some View {
@@ -191,7 +181,6 @@ struct DreamEntryView: View {
                     .opacity(orbOpacity)
                 Spacer()
             }
-
             VStack {
                 Spacer()
                 Text("Reading your dream…")
@@ -203,97 +192,67 @@ struct DreamEntryView: View {
     }
 
     // ─────────────────────────────────────────
-    // MARK: - Handle Unveil Tap
+    // MARK: - Handle Unveil
     // ─────────────────────────────────────────
 
     private func handleUnveil() {
         let trimmed = dreamText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-
-        // Paywall check
         if let user = auth.user, !user.canInterpret {
             showPaywall = true
             return
         }
-
         textFocused = false
         errorMessage = nil
-
-        // Build dream entry
         guard let userId = auth.user?.id else { return }
-        var dream = DreamEntry(
-            userId: userId,
-            rawText: trimmed,
-            dreamerType: auth.user?.dreamerType ?? .fragments
-        )
-
+        let dream = DreamEntry(userId: userId, rawText: trimmed, dreamerType: auth.user?.dreamerType ?? .fragments)
         activeDream = dream
         triggerUnveil(dream: dream)
     }
 
     // ─────────────────────────────────────────
-    // MARK: - Unveil Animation (2.8s sequence)
+    // MARK: - Unveil Sequence
     // ─────────────────────────────────────────
 
     private func triggerUnveil(dream: DreamEntry) {
         phase = .unveiling
-
-        // Phase 1: Aurora warms
         withAnimation(.easeInOut(duration: 0.7)) {
             auroraHueShift = 35
             auroraScale    = 0.94
         }
-
-        // Phase 2: Orb blooms
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             withAnimation(.spring(response: 0.9, dampingFraction: 0.7)) {
                 orbScale   = 1.0
                 orbOpacity = 1.0
             }
         }
-
-        // Phase 3: Orb dissolves + API call
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-            withAnimation(.easeOut(duration: 0.6)) {
-                orbOpacity = 0
-            }
-
-            // Fire API call
+            withAnimation(.easeOut(duration: 0.6)) { orbOpacity = 0 }
             Task {
                 do {
                     let result = try await InterpretationEngine.interpret(
                         dream: dream.rawText,
                         dreamerType: dream.dreamerType
                     )
-
                     var updatedDream = dream
                     updatedDream.interpretation = result.interpretation
                     updatedDream.symbols = result.symbols
                     activeDream = updatedDream
-
-                    // Save
                     await store.saveDream(updatedDream)
                     await auth.incrementInterpretationsUsed()
-
-                    // Phase 4: Lines stagger in
                     await MainActor.run {
                         phase = .reading
                         let delays = [0.0, 0.28, 0.48, 0.64, 0.9]
                         for (i, delay) in delays.enumerated() {
                             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                                withAnimation(.easeOut(duration: 0.7)) {
-                                    lineVisible[i] = true
-                                }
+                                withAnimation(.easeOut(duration: 0.7)) { lineVisible[i] = true }
                             }
                         }
                     }
-
-                    // Cool aurora back down
                     withAnimation(.easeInOut(duration: 1.2)) {
                         auroraHueShift = 0
                         auroraScale    = 1.0
                     }
-
                 } catch {
                     await MainActor.run {
                         errorMessage = error.localizedDescription
@@ -322,10 +281,6 @@ struct DreamEntryView: View {
         activeDream    = nil
         phase          = .entry
     }
-
-    // ─────────────────────────────────────────
-    // MARK: - Time Label
-    // ─────────────────────────────────────────
 
     private func timeLabel() -> String {
         let f = DateFormatter()
