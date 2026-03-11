@@ -71,7 +71,7 @@ struct ReflectionView: View {
                         .fill(NNColour.textMuted.opacity(0.3))
                         .frame(width: 1)
 
-                    Text(""\(dream.rawText.prefix(80))…"")
+                    Text("\"\(dream.rawText.prefix(80))…\"")
                         .font(.custom("PlayfairDisplay-Italic", size: 13))
                         .foregroundColor(NNColour.textMuted)
                         .lineSpacing(3)
