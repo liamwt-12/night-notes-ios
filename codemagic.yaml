@@ -34,12 +34,15 @@ workflows:
           keychain add-certificates
           xcode-project use-profiles
 
+      - name: Set build number
+        script: |
+          agvtool new-version -all 3
+
       - name: Build IPA
         script: |
           xcode-project build-ipa \
             --project "NightNotes.xcodeproj" \
-            --scheme "NightNotes" \
-            --build-number 3
+            --scheme "NightNotes"
 
     artifacts:
       - build/ios/ipa/*.ipa
