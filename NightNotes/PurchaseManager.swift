@@ -1,75 +1,131 @@
+import Foundation
 import StoreKit
-import SwiftUI
+
+// ─────────────────────────────────────────
+// MARK: - Purchase Manager
+// ─────────────────────────────────────────
+// Subscription-only: uk.nightnotes.subscription.monthly (£4.99/mo)
+// Tokens IAP dropped — creates anxiety.
 
 @MainActor
 class PurchaseManager: ObservableObject {
-    @Published var products: [Product] = []
-    @Published var hasActiveSubscription = false
-    @Published var isLoading = false
+    @Published var monthlyProduct: Product?
+    @Published var isSubscribed = false
+    @Published var isPurchasing = false
     @Published var error: String?
-    
-    private let productIds = ["uk.nightnotes.tokens.3", "uk.nightnotes.tokens.10", "uk.nightnotes.subscription.monthly"]
-    
-    init() { Task { await loadProducts() } }
-    
-    func loadProducts() async {
-        isLoading = true
-        do {
-            products = try await Product.products(for: productIds).sorted { $0.price < $1.price }
-        } catch { self.error = "Failed to load products" }
-        isLoading = false
+
+    private let monthlyId = "uk.nightnotes.subscription.monthly"
+    private var updateTask: Task<Void, Never>?
+
+    init() {
+        updateTask = Task { await listenForTransactions() }
     }
-    
-    func purchase(_ product: Product) async -> Bool {
-        isLoading = true
+
+    deinit {
+        updateTask?.cancel()
+    }
+
+    // ─────────────────────────────────────────
+    // MARK: - Load Products
+    // ─────────────────────────────────────────
+
+    func loadProducts() async {
+        do {
+            let products = try await Product.products(for: [monthlyId])
+            monthlyProduct = products.first
+        } catch {
+            print("Product load error: \(error)")
+        }
+        await updateSubscriptionStatus()
+    }
+
+    // ─────────────────────────────────────────
+    // MARK: - Purchase
+    // ─────────────────────────────────────────
+
+    func purchaseMonthly() async {
+        guard let product = monthlyProduct else { return }
+        isPurchasing = true
         do {
             let result = try await product.purchase()
             switch result {
             case .success(let verification):
                 let transaction = try checkVerified(verification)
-                await handlePurchase(product: product, transaction: transaction)
                 await transaction.finish()
-                isLoading = false
-                return true
-            case .userCancelled: break
-            case .pending: error = "Purchase pending"
-            @unknown default: break
+                await updateSubscriptionStatus()
+            case .userCancelled:
+                break
+            case .pending:
+                break
+            @unknown default:
+                break
             }
-        } catch { self.error = error.localizedDescription }
-        isLoading = false
-        return false
+        } catch {
+            self.error = error.localizedDescription
+        }
+        isPurchasing = false
     }
-    
+
+    // ─────────────────────────────────────────
+    // MARK: - Restore
+    // ─────────────────────────────────────────
+
+    func restorePurchases() async {
+        isPurchasing = true
+        do {
+            try await AppStore.sync()
+            await updateSubscriptionStatus()
+        } catch {
+            self.error = error.localizedDescription
+        }
+        isPurchasing = false
+    }
+
+    // ─────────────────────────────────────────
+    // MARK: - Status Check
+    // ─────────────────────────────────────────
+
+    func updateSubscriptionStatus() async {
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let tx) = result,
+                  tx.productID == monthlyId,
+                  tx.revocationDate == nil
+            else { continue }
+            isSubscribed = true
+            return
+        }
+        isSubscribed = false
+    }
+
+    // ─────────────────────────────────────────
+    // MARK: - Transaction Listener
+    // ─────────────────────────────────────────
+
+    private func listenForTransactions() async {
+        for await result in Transaction.updates {
+            if case .verified(let tx) = result {
+                await tx.finish()
+                await updateSubscriptionStatus()
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────
+    // MARK: - Verification
+    // ─────────────────────────────────────────
+
     private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
         switch result {
-        case .unverified: throw StoreError.failedVerification
-        case .verified(let safe): return safe
+        case .unverified: throw PurchaseError.failedVerification
+        case .verified(let value): return value
         }
     }
-    
-    private func handlePurchase(product: Product, transaction: StoreKit.Transaction) async {
-        let supabase = SupabaseClient.shared
-        guard let session = try? await supabase.auth.session else { return }
-        
-        if product.type == .consumable {
-            let tokens = product.id.contains("10") ? 10 : 3
-            try? await supabase.database.rpc("add_tokens", params: [
-                "user_uuid": session.user.id.uuidString,
-                "token_count": String(tokens),
-                "amount": "\(product.price)",
-                "transaction_id": String(transaction.id)
-            ]).execute()
-        } else if product.type == .autoRenewable {
-            try? await supabase.database.rpc("activate_subscription", params: [
-                "user_uuid": session.user.id.uuidString,
-                "transaction_id": String(transaction.id)
-            ]).execute()
-            hasActiveSubscription = true
-        }
-    }
-    
-    var tokenProducts: [Product] { products.filter { $0.type == .consumable } }
-    var subscriptionProduct: Product? { products.first { $0.type == .autoRenewable } }
 }
 
-enum StoreError: Error { case failedVerification }
+enum PurchaseError: LocalizedError {
+    case failedVerification
+
+    var errorDescription: String? {
+        "Purchase verification failed."
+    }
+}

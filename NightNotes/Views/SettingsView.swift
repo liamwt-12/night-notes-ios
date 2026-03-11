@@ -1,59 +1,191 @@
 import SwiftUI
 
+// ─────────────────────────────────────────
+// MARK: - Settings View
+// ─────────────────────────────────────────
+// Screen 12: "You." — minimal, no boxes
+
 struct SettingsView: View {
-    @EnvironmentObject var authManager: AuthManager
-    @EnvironmentObject var purchaseManager: PurchaseManager
-    @State private var showPurchase = false
-    @State private var showSignOut = false
-    
+    @EnvironmentObject var auth:    AuthManager
+    @EnvironmentObject var purchase: PurchaseManager
+
+    @State private var showDreamerTypePicker = false
+
     var body: some View {
         ZStack {
-            VeilBackground()
-            ScrollView {
-                VStack(alignment: .leading) {
-                    Text("night notes").font(Theme.logoFont).foregroundColor(Theme.textSecondary).tracking(4).padding(.top, 20)
-                    Text("Settings").font(Theme.headingFont).foregroundColor(Theme.textPrimary).padding(.top, 40)
-                    
-                    Text("ACCOUNT").font(Theme.captionFont).foregroundColor(Theme.textMuted).tracking(1.5).padding(.top, 32)
-                    
-                    HStack {
-                        Text("Email").foregroundColor(Theme.textPrimary)
-                        Spacer()
-                        Text(authManager.user?.email ?? "—").foregroundColor(Theme.textMuted)
-                    }.font(Theme.bodyFont).padding(.vertical, 12)
-                    
-                    HStack {
-                        Text("Tokens").foregroundColor(Theme.textPrimary)
-                        Spacer()
-                        Text("\(authManager.user?.tokens ?? 0)").foregroundColor(Theme.textMuted)
-                    }.font(Theme.bodyFont).padding(.vertical, 12)
-                    
-                    Button(action: { showPurchase = true }) {
+            AuroraView()
+            GrainOverlay()
+
+            VStack(alignment: .leading, spacing: 0) {
+
+                // Heading
+                Text("You.")
+                    .font(NNFont.display(56))
+                    .foregroundColor(NNColour.textPrimary)
+                    .padding(.bottom, 8)
+
+                Text(auth.user?.email ?? "dreamer")
+                    .font(NNFont.ui(11))
+                    .tracking(2)
+                    .foregroundColor(NNColour.textMuted)
+                    .padding(.bottom, 40)
+
+                // Subscription status
+                settingsSection("Subscription") {
+                    if purchase.isSubscribed {
                         HStack {
-                            Text("Get more dreams").foregroundColor(Theme.textPrimary)
+                            GlowOrb(colour: NNColour.orbAmber, size: 7, animate: false)
+                            Text("Active")
+                                .font(.custom("PlayfairDisplay-Italic", size: 16))
+                                .foregroundColor(NNColour.textSecondary)
                             Spacer()
-                            Image(systemName: "chevron.right").foregroundColor(Theme.textMuted)
-                        }.padding(20).background(RoundedRectangle(cornerRadius: 16).fill(Theme.cardBackground))
-                    }.padding(.top, 16)
-                    
-                    Button("Restore purchases") {
-                        Task { await purchaseManager.loadProducts() }
-                    }.font(Theme.captionFont).foregroundColor(Theme.textMuted).frame(maxWidth: .infinity).padding(.top, 16)
-                    
-                    Button(action: { showSignOut = true }) {
-                        Text("Sign out").foregroundColor(.red.opacity(0.8)).frame(maxWidth: .infinity)
-                            .padding(.vertical, 16).background(RoundedRectangle(cornerRadius: 16).fill(Color.red.opacity(0.08)))
-                    }.padding(.top, 40)
-                    
-                    Text("Version 1.0.0").font(Theme.captionFont).foregroundColor(Theme.textMuted)
-                        .frame(maxWidth: .infinity).padding(.top, 32)
-                }.padding(.horizontal, 32)
+                        }
+                        .padding(.vertical, 14)
+                    } else {
+                        HStack {
+                            let used  = auth.user?.freeInterpretationsUsed ?? 0
+                            let total = 3
+                            Text("\(total - min(used, total)) free reading\(total - min(used, total) == 1 ? "" : "s") remaining")
+                                .font(.custom("PlayfairDisplay-Italic", size: 16))
+                                .foregroundColor(NNColour.textSecondary)
+                            Spacer()
+                        }
+                        .padding(.vertical, 14)
+                    }
+                }
+
+                Hairline()
+
+                // Dreamer type
+                settingsSection("Dreamer type") {
+                    Button(action: { showDreamerTypePicker = true }) {
+                        HStack {
+                            Text(auth.user?.dreamerType?.label ?? "Not set")
+                                .font(.custom("PlayfairDisplay-Italic", size: 16))
+                                .foregroundColor(NNColour.textSecondary)
+                            Spacer()
+                            Text("Change")
+                                .font(NNFont.ui(10))
+                                .tracking(2)
+                                .foregroundColor(NNColour.textMuted)
+                        }
+                        .padding(.vertical, 14)
+                    }
+                }
+
+                Hairline()
+
+                // Notifications placeholder
+                settingsSection("Reminders") {
+                    HStack {
+                        Text("Morning prompt")
+                            .font(.custom("PlayfairDisplay-Italic", size: 16))
+                            .foregroundColor(NNColour.textSecondary)
+                        Spacer()
+                        Text("Off")
+                            .font(NNFont.ui(10))
+                            .tracking(2)
+                            .foregroundColor(NNColour.textMuted)
+                    }
+                    .padding(.vertical, 14)
+                }
+
+                Hairline()
+
+                Spacer()
+
+                // Sign out
+                Button(action: {
+                    Task { await auth.signOut() }
+                }) {
+                    Text("Sign out")
+                        .font(NNFont.ui(11))
+                        .tracking(3)
+                        .foregroundColor(NNColour.textMuted)
+                }
+                .padding(.bottom, 16)
+
+                // Legal
+                Text("night notes · by useful for humans")
+                    .font(NNFont.ui(9))
+                    .tracking(2)
+                    .foregroundColor(NNColour.textMuted.opacity(0.5))
             }
+            .padding(.horizontal, 26)
+            .padding(.top, 56)
+            .padding(.bottom, 44)
         }
-        .sheet(isPresented: $showPurchase) { PurchaseView() }
-        .alert("Sign out?", isPresented: $showSignOut) {
-            Button("Cancel", role: .cancel) {}
-            Button("Sign out", role: .destructive) { Task { await authManager.signOut() } }
+        .sheet(isPresented: $showDreamerTypePicker) {
+            DreamerTypePickerSheet()
         }
+        .onAppear {
+            Task { await purchase.updateSubscriptionStatus() }
+        }
+    }
+
+    @ViewBuilder
+    private func settingsSection<Content: View>(
+        _ label: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(label)
+                .font(NNFont.ui(9))
+                .tracking(4)
+                .foregroundColor(NNColour.textMuted)
+                .padding(.top, 20)
+                .padding(.bottom, 4)
+            content()
+        }
+    }
+}
+
+// ─────────────────────────────────────────
+// MARK: - Dreamer Type Picker Sheet
+// ─────────────────────────────────────────
+
+struct DreamerTypePickerSheet: View {
+    @EnvironmentObject var auth: AuthManager
+    @Environment(\.dismiss) var dismiss
+    @State private var selected: DreamerType?
+
+    var body: some View {
+        ZStack {
+            AuroraView()
+            GrainOverlay()
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("Dreamer type")
+                        .font(NNFont.display(32))
+                        .foregroundColor(NNColour.textPrimary)
+                    Spacer()
+                    Button("Done") { dismiss() }
+                        .font(NNFont.ui(12))
+                        .tracking(2)
+                        .foregroundColor(NNColour.textMuted)
+                }
+                .padding(.bottom, 32)
+
+                ForEach(DreamerType.allCases, id: \.self) { type in
+                    DreamerTypeRow(
+                        type: type,
+                        isSelected: (selected ?? auth.user?.dreamerType) == type,
+                        onTap: {
+                            selected = type
+                            Task {
+                                await auth.saveDreamerType(type)
+                                dismiss()
+                            }
+                        }
+                    )
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, 26)
+            .padding(.top, 52)
+        }
+        .onAppear { selected = auth.user?.dreamerType }
     }
 }

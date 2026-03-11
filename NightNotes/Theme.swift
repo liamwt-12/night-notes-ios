@@ -1,98 +1,98 @@
 import SwiftUI
 
-struct Theme {
-    static let background = Color(hex: "F5F3F0")
-    static let textPrimary = Color(hex: "38343A")
-    static let textSecondary = Color(hex: "8A8488")
-    static let textMuted = Color(hex: "A09AA4")
-    static let cardBackground = Color.white.opacity(0.55)
-    static let cardBorder = Color.white.opacity(0.6)
-    static let buttonPrimary = Color(hex: "38343A")
-    static let buttonText = Color(hex: "F5F3F0")
-    static let veilPurple = Color(hex: "C8BED2").opacity(0.35)
-    static let veilBlue = Color(hex: "BEC8D7").opacity(0.3)
-    static let veilWarm = Color(hex: "D7CDC8").opacity(0.2)
-    
-    static let logoFont = Font.system(size: 13, weight: .light, design: .serif).italic()
-    static let logoLargeFont = Font.system(size: 36, weight: .light, design: .serif).italic()
-    static let headingFont = Font.system(size: 32, weight: .light, design: .serif).italic()
-    static let bodySerifFont = Font.system(size: 18, weight: .regular, design: .serif)
-    static let bodyFont = Font.system(size: 16, weight: .regular)
-    static let captionFont = Font.system(size: 11, weight: .regular)
-    static let buttonFont = Font.system(size: 16, weight: .regular, design: .serif).italic()
+// ─────────────────────────────────────────
+// MARK: - Colour Palette
+// ─────────────────────────────────────────
+
+struct NNColour {
+    // Background base
+    static let void          = Color(hex: "0b0717")
+
+    // Aurora blob colours (used in AuroraView)
+    static let auroraRose    = Color(r: 0.647, g: 0.216, b: 0.529) // rgba(165,55,135)
+    static let auroraIndigo  = Color(r: 0.333, g: 0.188, b: 0.765) // rgba(85,48,195)
+    static let auroraEmber   = Color(r: 0.843, g: 0.314, b: 0.188) // rgba(215,80,48)
+
+    // Orb colours (pure shadow, zero fill)
+    static let orbRose       = Color(r: 0.824, g: 0.369, b: 0.671)
+    static let orbWater      = Color(r: 0.290, g: 0.533, b: 0.902)
+    static let orbAmber      = Color(r: 0.843, g: 0.612, b: 0.180)
+
+    // Text
+    static let textPrimary   = Color(r: 1,     g: 0.925, b: 0.882) // warm white
+    static let textSecondary = Color(r: 0.863, g: 0.706, b: 0.784).opacity(0.55)
+    static let textMuted     = Color(r: 0.784, g: 0.627, b: 0.706).opacity(0.35)
+
+    // UI
+    static let hairline      = Color.white.opacity(0.07)
+    static let glassLight    = Color.white.opacity(0.05)
+    static let glassBorder   = Color.white.opacity(0.09)
 }
+
+// ─────────────────────────────────────────
+// MARK: - Typography
+// ─────────────────────────────────────────
+
+struct NNFont {
+    // Playfair Display 900 italic — the big moments
+    static func display(_ size: CGFloat) -> Font {
+        .custom("PlayfairDisplay-BlackItalic", size: size)
+    }
+    // DM Sans 200 — labels, UI chrome
+    static func ui(_ size: CGFloat, weight: Font.Weight = .ultraLight) -> Font {
+        .custom("DMSans-Regular", size: size).weight(weight)
+    }
+    // DM Sans 300 — body copy
+    static func body(_ size: CGFloat) -> Font {
+        .custom("DMSans-Regular", size: size).weight(.light)
+    }
+}
+
+// ─────────────────────────────────────────
+// MARK: - Dreamer Type
+// ─────────────────────────────────────────
+
+enum DreamerType: String, Codable, CaseIterable {
+    case vivid    = "vivid"
+    case recurring = "recurring"
+    case fragments = "fragments"
+
+    var label: String {
+        switch self {
+        case .vivid:     return "Vivid & cinematic"
+        case .recurring: return "Recurring themes"
+        case .fragments: return "Just fragments"
+        }
+    }
+
+    var systemPromptNote: String {
+        switch self {
+        case .vivid:
+            return "This dreamer experiences rich, detailed narratives. Honour the complexity."
+        case .recurring:
+            return "This dreamer notices recurring symbols and patterns. Draw those threads forward."
+        case .fragments:
+            return "This dreamer only catches glimpses. Be gentle with incompleteness — fragments are enough."
+        }
+    }
+}
+
+// ─────────────────────────────────────────
+// MARK: - Colour helpers
+// ─────────────────────────────────────────
 
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
-        let r, g, b: UInt64
-        (r, g, b) = (int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        self.init(.sRGB, red: Double(r) / 255, green: Double(g) / 255, blue: Double(b) / 255)
+        let r = Double((int >> 16) & 0xFF) / 255
+        let g = Double((int >>  8) & 0xFF) / 255
+        let b = Double( int        & 0xFF) / 255
+        self.init(.sRGB, red: r, green: g, blue: b)
+    }
+
+    init(r: Double, g: Double, b: Double) {
+        self.init(.sRGB, red: r, green: g, blue: b)
     }
 }
-
-struct VeilBackground: View {
-    @State private var animate = false
-    var body: some View {
-        ZStack {
-            Theme.background
-            Ellipse().fill(LinearGradient(colors: [Theme.veilPurple, .clear], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 500, height: 400).blur(radius: 60)
-                .offset(x: animate ? -50 : -80, y: animate ? -100 : -120)
-                .animation(.easeInOut(duration: 20).repeatForever(autoreverses: true), value: animate)
-            Ellipse().fill(LinearGradient(colors: [Theme.veilBlue, .clear], startPoint: .topTrailing, endPoint: .bottomLeading))
-                .frame(width: 450, height: 350).blur(radius: 70)
-                .offset(x: animate ? 100 : 80, y: animate ? 150 : 180)
-                .animation(.easeInOut(duration: 28).repeatForever(autoreverses: true), value: animate)
-        }
-        .ignoresSafeArea()
-        .onAppear { animate = true }
-    }
-}
-
-struct PrimaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(Theme.buttonFont)
-            .foregroundColor(Theme.buttonText)
-            .padding(.horizontal, 56).padding(.vertical, 20)
-            .background(Theme.buttonPrimary)
-            .cornerRadius(32)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-    }
-}
-
-struct GlassCard<Content: View>: View {
-    let content: Content
-    init(@ViewBuilder content: () -> Content) { self.content = content() }
-    var body: some View {
-        content.background(RoundedRectangle(cornerRadius: 28).fill(Theme.cardBackground)
-            .overlay(RoundedRectangle(cornerRadius: 28).stroke(Theme.cardBorder, lineWidth: 1)))
-    }
-}
-
-struct ModeToggle: View {
-    @Binding var mode: InterpretationMode
-    var body: some View {
-        HStack(spacing: 28) {
-            ModeOption(title: "Surface", isSelected: mode == .surface) { mode = .surface }
-            ModeOption(title: "Beneath", isSelected: mode == .beneath) { mode = .beneath }
-        }
-    }
-}
-
-struct ModeOption: View {
-    let title: String; let isSelected: Bool; let action: () -> Void
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                Text(title).font(Theme.captionFont).foregroundColor(isSelected ? Theme.textPrimary : Theme.textMuted)
-                Rectangle().fill(Theme.textPrimary).frame(height: 1).opacity(isSelected ? 1 : 0)
-            }
-        }
-    }
-}
-
-enum InterpretationMode: String, Codable { case surface, beneath }

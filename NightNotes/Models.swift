@@ -1,86 +1,115 @@
 import Foundation
 
+// ─────────────────────────────────────────
+// MARK: - Dream Entry
+// ─────────────────────────────────────────
+
+struct DreamEntry: Identifiable, Codable {
+    let id: UUID
+    let userId: UUID
+    var rawText: String
+    var interpretation: String?
+    var dreamerType: DreamerType
+    var symbols: [String]       // extracted by AI
+    var landed: LandingRating?
+    let createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        userId: UUID,
+        rawText: String,
+        dreamerType: DreamerType = .fragments
+    ) {
+        self.id          = id
+        self.userId      = userId
+        self.rawText     = rawText
+        self.dreamerType = dreamerType
+        self.symbols     = []
+        self.createdAt   = Date()
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, userId = "user_id", rawText = "raw_text",
+             interpretation, dreamerType = "dreamer_type",
+             symbols, landed, createdAt = "created_at"
+    }
+}
+
+// ─────────────────────────────────────────
+// MARK: - Landing Rating (did it land?)
+// ─────────────────────────────────────────
+
+enum LandingRating: String, Codable, CaseIterable {
+    case yes    = "yes"
+    case partly = "partly"
+    case no     = "no"
+
+    var label: String {
+        switch self {
+        case .yes:    return "Yes"
+        case .partly: return "Partly"
+        case .no:     return "Not quite"
+        }
+    }
+}
+
+// ─────────────────────────────────────────
+// MARK: - Pattern Symbol (recurring)
+// ─────────────────────────────────────────
+
+struct PatternSymbol: Identifiable {
+    let id = UUID()
+    let name: String
+    let count: Int
+    let colour: String   // "rose" | "water" | "amber"
+}
+
+// ─────────────────────────────────────────
+// MARK: - User Profile
+// ─────────────────────────────────────────
+
 struct UserProfile: Codable, Identifiable {
     let id: UUID
     var email: String?
-    var freeDreamsUsed: Int
-    var tokens: Int
-    var subscriptionStatus: SubscriptionStatus
-    var subscriptionExpiresAt: Date?
-    
-    enum CodingKeys: String, CodingKey {
-        case id, email, tokens
-        case freeDreamsUsed = "free_dreams_used"
-        case subscriptionStatus = "subscription_status"
-        case subscriptionExpiresAt = "subscription_expires_at"
-    }
-    
-    var canInterpret: Bool {
-        if subscriptionStatus == .active { return true }
-        if freeDreamsUsed < 1 { return true }
-        if tokens > 0 { return true }
-        return false
-    }
-    var remainingFree: Int { max(0, 1 - freeDreamsUsed) }
-}
-
-enum SubscriptionStatus: String, Codable { case none, active, cancelled, expired }
-
-struct Dream: Codable, Identifiable {
-    let id: UUID
-    let userId: UUID
-    let content: String
-    var interpretation: String?
-    var interpretationMode: InterpretationMode
-    var tokenUsed: Bool
+    var dreamerType: DreamerType?
+    var subscriptionActive: Bool
+    var freeInterpretationsUsed: Int
     let createdAt: Date
-    
+
     enum CodingKeys: String, CodingKey {
-        case id, content, interpretation
-        case userId = "user_id"
-        case interpretationMode = "interpretation_mode"
-        case tokenUsed = "token_used"
-        case createdAt = "created_at"
+        case id, email,
+             dreamerType          = "dreamer_type",
+             subscriptionActive   = "subscription_active",
+             freeInterpretationsUsed = "free_interpretations_used",
+             createdAt            = "created_at"
     }
-    
-    var formattedDate: String {
-        let f = DateFormatter(); f.dateFormat = "MMMM d"; return f.string(from: createdAt)
-    }
-    var previewText: String { content.count <= 100 ? content : String(content.prefix(100)) + "..." }
-}
 
-struct InterpretationResponse: Codable {
-    let interpretation: String
-    let mode: String
-    let creditType: String
-    let dreamId: UUID?
-    enum CodingKeys: String, CodingKey {
-        case interpretation, mode
-        case creditType = "credit_type"
-        case dreamId = "dream_id"
+    var canInterpret: Bool {
+        subscriptionActive || freeInterpretationsUsed < 3
+    }
+
+    var interpretationsRemaining: Int {
+        guard !subscriptionActive else { return Int.max }
+        return max(0, 3 - freeInterpretationsUsed)
     }
 }
 
-struct DreamGroup: Identifiable {
-    let id = UUID()
-    let month: String
-    let year: Int
-    let dreams: [Dream]
+// ─────────────────────────────────────────
+// MARK: - Onboarding state
+// ─────────────────────────────────────────
+
+enum OnboardingStep {
+    case hero
+    case dreamerType
+    case transition
+    case signIn
 }
 
-extension Array where Element == Dream {
-    func groupedByMonth() -> [DreamGroup] {
-        let calendar = Calendar.current
-        let formatter = DateFormatter(); formatter.dateFormat = "MMMM"
-        let grouped = Dictionary(grouping: self) { dream in
-            let c = calendar.dateComponents([.year, .month], from: dream.createdAt)
-            return "\(c.year ?? 0)-\(c.month ?? 0)"
-        }
-        return grouped.map { _, dreams in
-            let first = dreams.first!
-            let c = calendar.dateComponents([.year, .month], from: first.createdAt)
-            return DreamGroup(month: formatter.string(from: first.createdAt), year: c.year ?? 0,
-                            dreams: dreams.sorted { $0.createdAt > $1.createdAt })
-        }.sorted { $0.year > $1.year || ($0.year == $1.year && $0.month > $1.month) }
-    }
+// ─────────────────────────────────────────
+// MARK: - App Phase
+// ─────────────────────────────────────────
+
+enum AppPhase {
+    case onboarding
+    case main
 }

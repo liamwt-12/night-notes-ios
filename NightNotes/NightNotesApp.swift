@@ -2,37 +2,57 @@ import SwiftUI
 
 @main
 struct NightNotesApp: App {
-    @StateObject private var authManager = AuthManager()
-    @StateObject private var dreamStore = DreamStore()
-    @StateObject private var purchaseManager = PurchaseManager()
-    
+    @StateObject private var auth     = AuthManager()
+    @StateObject private var store    = DreamStore()
+    @StateObject private var purchase = PurchaseManager()
+
     var body: some Scene {
         WindowGroup {
-            Group {
-                if authManager.isLoading {
-                    LoadingView()
-                } else if authManager.isAuthenticated {
-                    MainTabView()
-                } else {
-                    OnboardingView()
-                }
-            }
-            .environmentObject(authManager)
-            .environmentObject(dreamStore)
-            .environmentObject(purchaseManager)
-            .preferredColorScheme(.light)
+            RootView()
+                .environmentObject(auth)
+                .environmentObject(store)
+                .environmentObject(purchase)
+                .preferredColorScheme(.dark)
         }
     }
 }
 
-struct LoadingView: View {
+// ─────────────────────────────────────────
+// MARK: - Root View
+// ─────────────────────────────────────────
+
+struct RootView: View {
+    @EnvironmentObject var auth: AuthManager
+
     var body: some View {
-        ZStack {
-            Theme.background.ignoresSafeArea()
-            VeilBackground()
-            Text("night notes")
-                .font(Theme.logoFont)
-                .foregroundColor(Theme.textMuted)
+        Group {
+            if auth.isLoading {
+                // Splash — aurora while checking session
+                ZStack {
+                    AuroraView()
+                    GrainOverlay()
+
+                    VStack(spacing: 20) {
+                        Spacer()
+                        GlowOrb(colour: NNColour.orbRose, size: 14)
+                        Text("night notes")
+                            .font(NNFont.ui(11))
+                            .tracking(6)
+                            .foregroundColor(NNColour.textMuted)
+                        Spacer()
+                    }
+                }
+                .ignoresSafeArea()
+
+            } else if auth.isAuthenticated {
+                MainTabView()
+
+            } else {
+                OnboardingView()
+            }
+        }
+        .task {
+            await auth.checkSession()
         }
     }
 }
