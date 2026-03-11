@@ -1,26 +1,26 @@
 import Foundation
+import Supabase
 
 // ─────────────────────────────────────────
 // MARK: - Interpretation Engine
 // ─────────────────────────────────────────
-// Calls trynightnotes.com/api/interpret (Next.js backend)
-// which proxies to Claude with the system prompt.
 
 struct InterpretationEngine {
-
-    // ─────────────────────────────────────────
-    // MARK: - Main interpret call
-    // ─────────────────────────────────────────
 
     static func interpret(
         dream: String,
         dreamerType: DreamerType
     ) async throws -> InterpretationResult {
 
-        let url = URL(string: "https://trynightnotes.com/api/interpret")!
+        // Get current session token
+        let session = try await supabase.auth.session
+        let token = session.accessToken
+
+        let url = URL(string: "https://night-notes-api.netlify.app/.netlify/functions/interpret")!
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 30
 
         let body = InterpretRequest(
@@ -47,7 +47,7 @@ struct InterpretationEngine {
 }
 
 // ─────────────────────────────────────────
-// MARK: - Request / Response types
+// MARK: - Types
 // ─────────────────────────────────────────
 
 private struct InterpretRequest: Codable {
