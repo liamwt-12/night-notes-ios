@@ -58,7 +58,6 @@ enum LandingRating: String, Codable, CaseIterable {
         case .partly: return "Somewhat"
         case .no:     return "Not really"
         }
-        }
     }
 }
 
