@@ -1,2 +1,4 @@
 # Local Netlify folder
 .netlify
+api/node_modules/
+api/package-lock.json
