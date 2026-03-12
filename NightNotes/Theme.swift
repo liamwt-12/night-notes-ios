@@ -71,9 +71,7 @@ enum DreamerType: String, Codable, CaseIterable {
         case .recurring: return "Recurring dreams"
         case .fragments: return "Just fragments"
         }
-        }
     }
-
     var systemPromptNote: String {
         switch self {
         case .vivid:
