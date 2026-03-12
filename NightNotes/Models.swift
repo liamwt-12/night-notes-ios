@@ -12,7 +12,7 @@ struct DreamEntry: Identifiable, Codable {
     var dreamerType: DreamerType
     var symbols: [String]       // extracted by AI
     var landed: LandingRating?
-    let createdAt: Date
+    var createdAt: Date?
 
     init(
         id: UUID = UUID(),
@@ -82,7 +82,7 @@ struct UserProfile: Codable, Identifiable {
     var dreamerType: DreamerType?
     var subscriptionActive: Bool
     var freeInterpretationsUsed: Int
-    let createdAt: Date
+    var createdAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id, email,
