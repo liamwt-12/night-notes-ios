@@ -1,10 +1,6 @@
 import SwiftUI
 import AuthenticationServices
 
-// ─────────────────────────────────────────
-// MARK: - Onboarding Root
-// ─────────────────────────────────────────
-
 struct OnboardingView: View {
     @EnvironmentObject var auth: AuthManager
     @State private var step: OnboardingStep = .hero
@@ -12,40 +8,21 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            // Aurora lives at root — shared across all onboarding steps
             AuroraView()
-            GrainOverlay()
-
-            // Step router
             switch step {
             case .hero:
-                HeroScreen(onContinue: { step = .dreamerType })
-                    .transition(.opacity)
-
+                HeroScreen(onContinue: { step = .dreamerType }).transition(.opacity)
             case .dreamerType:
-                DreamerTypeScreen(
-                    selectedType: $selectedType,
-                    onContinue: { step = .transition }
-                )
-                .transition(.opacity)
-
+                DreamerTypeScreen(selectedType: $selectedType, onContinue: { step = .transition }).transition(.opacity)
             case .transition:
-                TransitionScreen(onContinue: { step = .signIn })
-                    .transition(.opacity)
-
+                TransitionScreen(onContinue: { step = .signIn }).transition(.opacity)
             case .signIn:
-                SignInScreen(selectedType: selectedType)
-                    .transition(.opacity)
+                SignInScreen(selectedType: selectedType).transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.5), value: step)
     }
 }
-
-// ─────────────────────────────────────────
-// MARK: - 1. Hero Screen
-// ─────────────────────────────────────────
-// "Something stayed from last night."
 
 struct HeroScreen: View {
     let onContinue: () -> Void
@@ -53,16 +30,14 @@ struct HeroScreen: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Wordmark
             Text("night notes")
                 .font(NNFont.ui(11))
                 .tracking(6)
-                .foregroundColor(NNColour.textMuted)
+                .foregroundColor(NNColour.textPrimary.opacity(0.5))
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Spacer()
 
-            // Hero orb
             HStack {
                 Spacer()
                 GlowOrb(colour: NNColour.orbRose, size: 18)
@@ -70,29 +45,22 @@ struct HeroScreen: View {
             }
             .padding(.bottom, 48)
 
-            // Main copy
             VStack(alignment: .leading, spacing: 16) {
-                Text("Something stayed")
-                    .font(NNFont.ui(13))
-                    .tracking(3)
-                    .foregroundColor(NNColour.textMuted)
-
-                Text("from last night.")
-                    .font(NNFont.display(62))
+                Text("Dreams fade quickly.")
+                    .font(NNFont.display(54))
                     .foregroundColor(NNColour.textPrimary)
                     .lineLimit(2)
 
-                Text("Hold onto it here,\nbefore it fades.")
+                Text("Write them down before they disappear.")
                     .font(.custom("PlayfairDisplay-Italic", size: 18))
-                    .foregroundColor(NNColour.textSecondary)
+                    .foregroundColor(NNColour.textPrimary.opacity(0.6))
                     .lineSpacing(4)
             }
 
             Spacer().frame(height: 52)
 
-            // CTA
             Button(action: onContinue) {
-                Text("Begin")
+                Text("Get started")
                     .font(NNFont.ui(15))
                     .tracking(2)
                     .foregroundColor(NNColour.textPrimary)
@@ -108,15 +76,9 @@ struct HeroScreen: View {
         .padding(.bottom, 52)
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : 24)
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.8).delay(0.2)) { appeared = true }
-        }
+        .onAppear { withAnimation(.easeOut(duration: 0.8).delay(0.2)) { appeared = true } }
     }
 }
-
-// ─────────────────────────────────────────
-// MARK: - 2. Dreamer Type Screen
-// ─────────────────────────────────────────
 
 struct DreamerTypeScreen: View {
     @Binding var selectedType: DreamerType?
@@ -128,7 +90,7 @@ struct DreamerTypeScreen: View {
             Text("night notes")
                 .font(NNFont.ui(11))
                 .tracking(6)
-                .foregroundColor(NNColour.textMuted)
+                .foregroundColor(NNColour.textPrimary.opacity(0.5))
 
             Spacer()
 
@@ -140,13 +102,8 @@ struct DreamerTypeScreen: View {
 
                 Hairline().padding(.vertical, 8)
 
-                // Options
                 ForEach(DreamerType.allCases, id: \.self) { type in
-                    DreamerTypeRow(
-                        type: type,
-                        isSelected: selectedType == type,
-                        onTap: { selectedType = type }
-                    )
+                    DreamerTypeRow(type: type, isSelected: selectedType == type, onTap: { selectedType = type })
                 }
 
                 Hairline().padding(.top, 8)
@@ -158,14 +115,11 @@ struct DreamerTypeScreen: View {
                 Text("Continue")
                     .font(NNFont.ui(15))
                     .tracking(2)
-                    .foregroundColor(selectedType != nil ? NNColour.textPrimary : NNColour.textMuted)
+                    .foregroundColor(selectedType != nil ? NNColour.textPrimary : NNColour.textPrimary.opacity(0.3))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 20)
                     .background(NNColour.glassLight)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(NNColour.glassBorder, lineWidth: 1)
-                    )
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(NNColour.glassBorder, lineWidth: 1))
                     .cornerRadius(14)
             }
             .disabled(selectedType == nil)
@@ -174,9 +128,7 @@ struct DreamerTypeScreen: View {
         .padding(.top, 64)
         .padding(.bottom, 52)
         .opacity(appeared ? 1 : 0)
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.6)) { appeared = true }
-        }
+        .onAppear { withAnimation(.easeOut(duration: 0.6)) { appeared = true } }
     }
 }
 
@@ -188,23 +140,21 @@ struct DreamerTypeRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 20) {
-                // Glow dot indicator
                 ZStack {
                     Circle()
                         .fill(Color.clear)
                         .frame(width: 8, height: 8)
                         .shadow(color: NNColour.orbRose.opacity(isSelected ? 0.9 : 0), radius: 4)
                         .shadow(color: NNColour.orbRose.opacity(isSelected ? 0.5 : 0), radius: 12)
-
                     Circle()
-                        .fill(isSelected ? NNColour.orbRose.opacity(0.8) : NNColour.textMuted.opacity(0.3))
+                        .fill(isSelected ? NNColour.orbRose.opacity(0.8) : NNColour.textPrimary.opacity(0.2))
                         .frame(width: 6, height: 6)
                 }
                 .frame(width: 20)
 
-                Text(type.label)
+                Text(type.extendedLabel)
                     .font(.custom("PlayfairDisplay-Italic", size: 19))
-                    .foregroundColor(isSelected ? NNColour.textPrimary : NNColour.textSecondary)
+                    .foregroundColor(isSelected ? NNColour.textPrimary : NNColour.textPrimary.opacity(0.5))
 
                 Spacer()
             }
@@ -213,11 +163,6 @@ struct DreamerTypeRow: View {
     }
 }
 
-// ─────────────────────────────────────────
-// MARK: - 3. Transition Screen
-// ─────────────────────────────────────────
-// Orb centre, reassuring copy
-
 struct TransitionScreen: View {
     let onContinue: () -> Void
     @State private var appeared = false
@@ -225,12 +170,10 @@ struct TransitionScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-
             GlowOrb(colour: NNColour.orbRose, size: 22)
-
             Spacer().frame(height: 48)
 
-            Text("Every morning,\nfor as long as you need.")
+            Text("A quiet place\nfor your dreams.")
                 .font(NNFont.display(34))
                 .foregroundColor(NNColour.textPrimary)
                 .multilineTextAlignment(.center)
@@ -238,11 +181,10 @@ struct TransitionScreen: View {
 
             Spacer().frame(height: 16)
 
-            Text("No judgement. No analysis.\nJust a quiet place to look.")
+            Text("No judgement. Just a place to look.")
                 .font(.custom("PlayfairDisplay-Italic", size: 16))
-                .foregroundColor(NNColour.textSecondary)
+                .foregroundColor(NNColour.textPrimary.opacity(0.55))
                 .multilineTextAlignment(.center)
-                .lineSpacing(4)
 
             Spacer()
 
@@ -261,15 +203,9 @@ struct TransitionScreen: View {
         .padding(.horizontal, 36)
         .padding(.bottom, 52)
         .opacity(appeared ? 1 : 0)
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.8)) { appeared = true }
-        }
+        .onAppear { withAnimation(.easeOut(duration: 0.8)) { appeared = true } }
     }
 }
-
-// ─────────────────────────────────────────
-// MARK: - 4. Sign In Screen
-// ─────────────────────────────────────────
 
 struct SignInScreen: View {
     let selectedType: DreamerType?
@@ -280,33 +216,29 @@ struct SignInScreen: View {
         VStack(alignment: .leading, spacing: 0) {
             Spacer()
 
-            Text("Almost there.")
-                .font(NNFont.display(48))
+            Text("Sign in to continue")
+                .font(NNFont.display(44))
                 .foregroundColor(NNColour.textPrimary)
 
             Spacer().frame(height: 12)
 
-            Text("Sign in to keep your dreams safe\nacross all your devices.")
+            Text("Your dreams are saved privately\nacross all your devices.")
                 .font(.custom("PlayfairDisplay-Italic", size: 16))
-                .foregroundColor(NNColour.textSecondary)
+                .foregroundColor(NNColour.textPrimary.opacity(0.55))
                 .lineSpacing(4)
 
             Spacer()
 
             VStack(spacing: 14) {
-                // Apple Sign In
                 SignInWithAppleButton(.continue) { request in
                     request.requestedScopes = [.email]
                 } onCompletion: { result in
                     switch result {
                     case .success(let auth):
-                        guard let appleId = auth.credential as? ASAuthorizationAppleIDCredential
-                        else { return }
+                        guard let appleId = auth.credential as? ASAuthorizationAppleIDCredential else { return }
                         Task {
                             await self.auth.signInWithApple(credential: appleId)
-                            if let type = selectedType {
-                                await self.auth.saveDreamerType(type)
-                            }
+                            if let type = selectedType { await self.auth.saveDreamerType(type) }
                         }
                     case .failure(let error):
                         print("Apple Sign In error: \(error)")
@@ -319,7 +251,7 @@ struct SignInScreen: View {
                 Text("Your dreams are private. Always.")
                     .font(NNFont.ui(10))
                     .tracking(2)
-                    .foregroundColor(NNColour.textMuted)
+                    .foregroundColor(NNColour.textPrimary.opacity(0.4))
                     .frame(maxWidth: .infinity, alignment: .center)
             }
         }
@@ -327,8 +259,6 @@ struct SignInScreen: View {
         .padding(.top, 80)
         .padding(.bottom, 52)
         .opacity(appeared ? 1 : 0)
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.6)) { appeared = true }
-        }
+        .onAppear { withAnimation(.easeOut(duration: 0.6)) { appeared = true } }
     }
 }

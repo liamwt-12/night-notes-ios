@@ -1,10 +1,6 @@
 import Foundation
 import Supabase
 
-// ─────────────────────────────────────────
-// MARK: - Interpretation Engine
-// ─────────────────────────────────────────
-
 struct InterpretationEngine {
 
     static func interpret(
@@ -12,10 +8,14 @@ struct InterpretationEngine {
         dreamerType: DreamerType
     ) async throws -> InterpretationResult {
 
-        // Get current session token
-        let session = try await supabase.auth.session
-        let token = session.accessToken
+        let session: Session
+        do {
+            session = try await supabase.auth.session
+        } catch {
+            throw InterpretError.noSession(error.localizedDescription)
+        }
 
+        let token = session.accessToken
         let url = URL(string: "https://night-notes-api.netlify.app/.netlify/functions/interpret")!
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
@@ -32,10 +32,13 @@ struct InterpretationEngine {
 
         let (data, response) = try await URLSession.shared.data(for: req)
 
-        guard let http = response as? HTTPURLResponse,
-              (200...299).contains(http.statusCode)
-        else {
-            throw InterpretError.serverError
+        guard let http = response as? HTTPURLResponse else {
+            throw InterpretError.serverError("No HTTP response")
+        }
+
+        guard (200...299).contains(http.statusCode) else {
+            let body = String(data: data, encoding: .utf8) ?? "empty"
+            throw InterpretError.serverError("HTTP \(http.statusCode): \(body)")
         }
 
         let result = try JSONDecoder().decode(InterpretResponse.self, from: data)
@@ -45,10 +48,6 @@ struct InterpretationEngine {
         )
     }
 }
-
-// ─────────────────────────────────────────
-// MARK: - Types
-// ─────────────────────────────────────────
 
 private struct InterpretRequest: Codable {
     let dream: String
@@ -67,13 +66,15 @@ struct InterpretationResult {
 }
 
 enum InterpretError: LocalizedError {
-    case serverError
+    case noSession(String)
+    case serverError(String)
     case noContent
 
     var errorDescription: String? {
         switch self {
-        case .serverError: return "Something went quiet. Try again in a moment."
-        case .noContent:   return "The reading came back empty."
+        case .noSession(let msg):   return "Session: \(msg)"
+        case .serverError(let msg): return "Error: \(msg)"
+        case .noContent:            return "Empty response."
         }
     }
 }

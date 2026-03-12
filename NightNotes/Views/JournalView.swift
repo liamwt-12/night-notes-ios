@@ -1,11 +1,5 @@
 import SwiftUI
 
-// ─────────────────────────────────────────
-// MARK: - Journal View
-// ─────────────────────────────────────────
-// Screen 9: Constellation view — dream orbs as pure light points
-// Screen 10: Pattern reveal after 7+ dreams
-
 struct JournalView: View {
     @EnvironmentObject var store: DreamStore
     @EnvironmentObject var auth:  AuthManager
@@ -13,59 +7,33 @@ struct JournalView: View {
     @State private var showPattern = false
     @State private var selectedDream: DreamEntry? = nil
 
-    private let orbColours: [Color] = [
-        NNColour.orbRose,
-        NNColour.orbWater,
-        NNColour.orbAmber
-    ]
+    private let orbColours: [Color] = [NNColour.orbRose, NNColour.orbWater, NNColour.orbAmber]
 
     var body: some View {
         ZStack {
             AuroraView()
-            GrainOverlay()
-
-            if store.dreams.isEmpty {
-                emptyState
-            } else {
-                journalContent
-            }
+            if store.dreams.isEmpty { emptyState } else { journalContent }
         }
-        .sheet(item: $selectedDream) { dream in
-            DreamDetailSheet(dream: dream)
-        }
-        .sheet(isPresented: $showPattern) {
-            PatternView(symbols: store.recurringSymbols())
-        }
+        .sheet(item: $selectedDream) { dream in DreamDetailSheet(dream: dream) }
+        .sheet(isPresented: $showPattern) { PatternView(symbols: store.recurringSymbols()) }
         .onAppear {
-            if let id = auth.user?.id {
-                Task { await store.fetchDreams(userId: id) }
-            }
+            if let id = auth.user?.id { Task { await store.fetchDreams(userId: id) } }
         }
     }
 
-    // ─────────────────────────────────────────
-    // MARK: - Journal Content
-    // ─────────────────────────────────────────
-
     private var journalContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-
-            // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Journal")
                         .font(NNFont.display(36))
                         .foregroundColor(NNColour.textPrimary)
-
                     Text("\(store.dreams.count) dream\(store.dreams.count == 1 ? "" : "s")")
                         .font(NNFont.ui(10))
                         .tracking(3)
-                        .foregroundColor(NNColour.textMuted)
+                        .foregroundColor(NNColour.textPrimary.opacity(0.4))
                 }
-
                 Spacer()
-
-                // Pattern button — shown after 7 entries
                 if store.dreams.count >= 7 {
                     Button(action: { showPattern = true }) {
                         VStack(spacing: 4) {
@@ -73,31 +41,25 @@ struct JournalView: View {
                             Text("Patterns")
                                 .font(NNFont.ui(9))
                                 .tracking(2)
-                                .foregroundColor(NNColour.textMuted)
+                                .foregroundColor(NNColour.textPrimary.opacity(0.4))
                         }
                     }
                 }
             }
             .padding(.bottom, 28)
 
-            // This week heading
             if !store.thisWeeksDreams.isEmpty {
                 Text("This week")
                     .font(NNFont.ui(10))
                     .tracking(4)
-                    .foregroundColor(NNColour.textMuted)
+                    .foregroundColor(NNColour.textPrimary.opacity(0.4))
                     .padding(.bottom, 16)
             }
 
-            // Constellation of dream orbs
             ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 0) {
                     ForEach(Array(store.dreams.enumerated()), id: \.element.id) { idx, dream in
-                        DreamOrbRow(
-                            dream: dream,
-                            colour: orbColours[idx % orbColours.count],
-                            onTap: { selectedDream = dream }
-                        )
+                        DreamOrbRow(dream: dream, colour: orbColours[idx % orbColours.count], onTap: { selectedDream = dream })
                     }
                 }
             }
@@ -107,27 +69,18 @@ struct JournalView: View {
         .padding(.bottom, 32)
     }
 
-    // ─────────────────────────────────────────
-    // MARK: - Empty State
-    // ─────────────────────────────────────────
-
     private var emptyState: some View {
         VStack(spacing: 24) {
             Spacer()
             GlowOrb(colour: NNColour.orbWater, size: 14)
-            Text("Your first dream is\nstill ahead of you.")
-                .font(.custom("PlayfairDisplay-Italic", size: 22))
-                .foregroundColor(NNColour.textSecondary)
+            Text("Your dreams will appear here.")
+                .font(.custom("PlayfairDisplay-Italic", size: 20))
+                .foregroundColor(NNColour.textPrimary.opacity(0.5))
                 .multilineTextAlignment(.center)
-                .lineSpacing(4)
             Spacer()
         }
     }
 }
-
-// ─────────────────────────────────────────
-// MARK: - Dream Orb Row
-// ─────────────────────────────────────────
 
 struct DreamOrbRow: View {
     let dream: DreamEntry
@@ -137,33 +90,23 @@ struct DreamOrbRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 20) {
-                // Orb — pure light point
-                GlowOrb(colour: colour, size: 9)
-                    .frame(width: 24)
-
+                GlowOrb(colour: colour, size: 9).frame(width: 24)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(dream.rawText.prefix(60) + (dream.rawText.count > 60 ? "…" : ""))
                         .font(.custom("PlayfairDisplay-Italic", size: 15))
                         .foregroundColor(NNColour.textPrimary.opacity(0.8))
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
-
                     Text(shortDate(dream.createdAt))
                         .font(NNFont.ui(9))
                         .tracking(2)
-                        .foregroundColor(NNColour.textMuted)
+                        .foregroundColor(NNColour.textPrimary.opacity(0.35))
                 }
-
                 Spacer()
-
-                // Landing indicator
-                if let rating = dream.landed {
-                    landingDot(rating: rating)
-                }
+                if let rating = dream.landed { landingDot(rating: rating) }
             }
             .padding(.vertical, 16)
         }
-
         Hairline()
     }
 
@@ -183,10 +126,6 @@ struct DreamOrbRow: View {
     }
 }
 
-// ─────────────────────────────────────────
-// MARK: - Dream Detail Sheet
-// ─────────────────────────────────────────
-
 struct DreamDetailSheet: View {
     let dream: DreamEntry
     @Environment(\.dismiss) var dismiss
@@ -194,14 +133,12 @@ struct DreamDetailSheet: View {
     var body: some View {
         ZStack {
             AuroraView()
-            GrainOverlay()
-
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
                     Button("Done") { dismiss() }
                         .font(NNFont.ui(12))
                         .tracking(2)
-                        .foregroundColor(NNColour.textMuted)
+                        .foregroundColor(NNColour.textPrimary.opacity(0.4))
                     Spacer()
                 }
                 .padding(.bottom, 28)
@@ -215,11 +152,9 @@ struct DreamDetailSheet: View {
 
                         if let interp = dream.interpretation {
                             Hairline().padding(.vertical, 8)
-
-                            Text("What it held.")
+                            Text("One way to see it")
                                 .font(NNFont.display(28))
                                 .foregroundColor(NNColour.textPrimary)
-
                             Text(interp)
                                 .font(.custom("PlayfairDisplay-Italic", size: 17))
                                 .foregroundColor(NNColour.textPrimary.opacity(0.75))
@@ -235,10 +170,6 @@ struct DreamDetailSheet: View {
     }
 }
 
-// ─────────────────────────────────────────
-// MARK: - Pattern View (Screen 10)
-// ─────────────────────────────────────────
-
 struct PatternView: View {
     let symbols: [PatternSymbol]
     @Environment(\.dismiss) var dismiss
@@ -246,36 +177,32 @@ struct PatternView: View {
     var body: some View {
         ZStack {
             AuroraView()
-            GrainOverlay()
-
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
                     Button("Close") { dismiss() }
                         .font(NNFont.ui(12))
                         .tracking(2)
-                        .foregroundColor(NNColour.textMuted)
+                        .foregroundColor(NNColour.textPrimary.opacity(0.4))
                     Spacer()
                 }
                 .padding(.bottom, 32)
 
-                Text("This week.")
+                Text("This week")
                     .font(NNFont.display(48))
                     .foregroundColor(NNColour.textPrimary)
                     .padding(.bottom, 8)
 
-                Text("Symbols you keep returning to.")
+                Text("Symbols that keep coming back.")
                     .font(.custom("PlayfairDisplay-Italic", size: 15))
-                    .foregroundColor(NNColour.textSecondary)
+                    .foregroundColor(NNColour.textPrimary.opacity(0.5))
                     .padding(.bottom, 32)
 
                 if symbols.isEmpty {
-                    Text("Keep dreaming — patterns will emerge.")
+                    Text("Keep going — patterns will emerge.")
                         .font(.custom("PlayfairDisplay-Italic", size: 17))
-                        .foregroundColor(NNColour.textMuted)
+                        .foregroundColor(NNColour.textPrimary.opacity(0.4))
                 } else {
-                    ForEach(symbols) { symbol in
-                        PatternSymbolRow(symbol: symbol)
-                    }
+                    ForEach(symbols) { symbol in PatternSymbolRow(symbol: symbol) }
                 }
 
                 Spacer()
@@ -299,22 +226,17 @@ struct PatternSymbolRow: View {
 
     var body: some View {
         HStack(spacing: 20) {
-            GlowOrb(colour: orbColour, size: 9)
-                .frame(width: 24)
-
+            GlowOrb(colour: orbColour, size: 9).frame(width: 24)
             Text(symbol.name)
                 .font(.custom("PlayfairDisplay-Italic", size: 18))
                 .foregroundColor(NNColour.textPrimary.opacity(0.85))
-
             Spacer()
-
             Text("×\(symbol.count)")
                 .font(NNFont.ui(11))
                 .tracking(2)
-                .foregroundColor(NNColour.textMuted)
+                .foregroundColor(NNColour.textPrimary.opacity(0.4))
         }
         .padding(.vertical, 14)
-
         Hairline()
     }
 }

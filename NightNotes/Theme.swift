@@ -65,6 +65,15 @@ enum DreamerType: String, Codable, CaseIterable {
         }
     }
 
+    var extendedLabel: String {
+        switch self {
+        case .vivid:     return "Vivid dreams"
+        case .recurring: return "Recurring dreams"
+        case .fragments: return "Just fragments"
+        }
+        }
+    }
+
     var systemPromptNote: String {
         switch self {
         case .vivid:

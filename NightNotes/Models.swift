@@ -51,6 +51,15 @@ enum LandingRating: String, Codable, CaseIterable {
         case .no:     return "Not quite"
         }
     }
+
+    var friendlyLabel: String {
+        switch self {
+        case .yes:    return "Yes"
+        case .partly: return "Somewhat"
+        case .no:     return "Not really"
+        }
+        }
+    }
 }
 
 // ─────────────────────────────────────────

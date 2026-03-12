@@ -1,35 +1,25 @@
 import SwiftUI
 
-// ─────────────────────────────────────────
-// MARK: - Purchase View (Soft Paywall)
-// ─────────────────────────────────────────
-// Screen 11: "You've started something."
-
 struct PurchaseView: View {
     @EnvironmentObject var purchase: PurchaseManager
     @Environment(\.dismiss) var dismiss
-
     @State private var appeared = false
 
     var body: some View {
         ZStack {
             AuroraView()
-            GrainOverlay()
-
             VStack(alignment: .leading, spacing: 0) {
-                // Close
                 HStack {
                     Spacer()
                     Button(action: { dismiss() }) {
-                        Text("Not yet")
+                        Text("Not now")
                             .font(NNFont.ui(11))
                             .tracking(2)
-                            .foregroundColor(NNColour.textMuted)
+                            .foregroundColor(NNColour.textPrimary.opacity(0.4))
                     }
                 }
                 .padding(.bottom, 40)
 
-                // Orb
                 HStack {
                     Spacer()
                     GlowOrb(colour: NNColour.orbRose, size: 18)
@@ -37,20 +27,18 @@ struct PurchaseView: View {
                 }
                 .padding(.bottom, 44)
 
-                // Headline
-                Text("You've started\nsomething.")
-                    .font(NNFont.display(48))
+                Text("Keep the dream going")
+                    .font(NNFont.display(46))
                     .foregroundColor(NNColour.textPrimary)
                     .lineSpacing(2)
                     .padding(.bottom, 16)
 
-                Text("Most people find the third week is\nwhen it gets interesting.")
+                Text("Most people find the third week\nis when it gets interesting.")
                     .font(.custom("PlayfairDisplay-Italic", size: 17))
-                    .foregroundColor(NNColour.textSecondary)
+                    .foregroundColor(NNColour.textPrimary.opacity(0.6))
                     .lineSpacing(4)
                     .padding(.bottom, 40)
 
-                // What you get
                 VStack(alignment: .leading, spacing: 14) {
                     PerkRow(text: "Unlimited dream interpretations")
                     PerkRow(text: "Symbol patterns across your journal")
@@ -61,24 +49,19 @@ struct PurchaseView: View {
 
                 Spacer()
 
-                // Price
                 if let product = purchase.monthlyProduct {
                     VStack(spacing: 8) {
                         Text(product.displayPrice + " / month")
                             .font(NNFont.ui(11))
                             .tracking(3)
-                            .foregroundColor(NNColour.textMuted)
+                            .foregroundColor(NNColour.textPrimary.opacity(0.4))
 
-                        Button(action: {
-                            Task { await purchase.purchaseMonthly() }
-                        }) {
+                        Button(action: { Task { await purchase.purchaseMonthly() } }) {
                             Group {
                                 if purchase.isPurchasing {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                        .tint(NNColour.textPrimary)
+                                    ProgressView().progressViewStyle(.circular).tint(NNColour.textPrimary)
                                 } else {
-                                    Text("Continue dreaming")
+                                    Text("Start exploring")
                                         .font(NNFont.ui(15))
                                         .tracking(2)
                                         .foregroundColor(NNColour.textPrimary)
@@ -92,20 +75,16 @@ struct PurchaseView: View {
                         }
                         .disabled(purchase.isPurchasing)
 
-                        Button(action: {
-                            Task { await purchase.restorePurchases() }
-                        }) {
+                        Button(action: { Task { await purchase.restorePurchases() } }) {
                             Text("Restore purchases")
                                 .font(NNFont.ui(10))
                                 .tracking(2)
-                                .foregroundColor(NNColour.textMuted)
+                                .foregroundColor(NNColour.textPrimary.opacity(0.4))
                         }
                         .padding(.top, 4)
                     }
                 } else {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .tint(NNColour.textMuted)
+                    ProgressView().progressViewStyle(.circular).tint(NNColour.textPrimary.opacity(0.4))
                 }
             }
             .padding(.horizontal, 28)
@@ -124,11 +103,10 @@ struct PerkRow: View {
     let text: String
     var body: some View {
         HStack(spacing: 16) {
-            GlowOrb(colour: NNColour.orbAmber, size: 7, animate: false)
-                .frame(width: 20)
+            GlowOrb(colour: NNColour.orbAmber, size: 7, animate: false).frame(width: 20)
             Text(text)
                 .font(.custom("PlayfairDisplay-Italic", size: 16))
-                .foregroundColor(NNColour.textSecondary)
+                .foregroundColor(NNColour.textPrimary.opacity(0.7))
         }
     }
 }
