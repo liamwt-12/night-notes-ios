@@ -62,7 +62,22 @@ class AuthManager: ObservableObject {
                 .value
             user = profile
         } catch {
-            print("Profile fetch error: \(error)")
+            // Profile missing — create a minimal one so the app can function
+            let newProfile = NewProfile(
+                id: userId,
+                email: nil,
+                subscriptionActive: false,
+                freeInterpretationsUsed: 0
+            )
+            do {
+                try await supabase
+                    .from("profiles")
+                    .upsert(newProfile)
+                    .execute()
+                await fetchProfile(userId: userId)
+            } catch {
+                print("Profile upsert error: \(error)")
+            }
         }
     }
 
