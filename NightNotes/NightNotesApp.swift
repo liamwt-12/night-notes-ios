@@ -23,6 +23,7 @@ struct NightNotesApp: App {
 
 struct RootView: View {
     @EnvironmentObject var auth: AuthManager
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     @State private var bloomFinished = false
     @State private var bloomScale: CGFloat = 0.001
@@ -39,7 +40,7 @@ struct RootView: View {
 
             if showContent {
                 Group {
-                    if auth.isAuthenticated {
+                    if auth.isAuthenticated && hasCompletedOnboarding {
                         MainTabView()
                     } else {
                         OnboardingView()

@@ -9,6 +9,11 @@ class AuthManager: ObservableObject {
     @Published var user: UserProfile?
     @Published var error: String?
 
+    init() {
+        // ⚠️ Temporary: reset for testing fresh onboarding — remove after confirming
+        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
+    }
+
     // ─────────────────────────────────────────
     // MARK: - Session Check
     // ─────────────────────────────────────────
@@ -64,6 +69,7 @@ class AuthManager: ObservableObject {
             let success = await fetchOrCreateProfile(userId: session.user.id, email: session.user.email)
             if success && user != nil {
                 isAuthenticated = true
+                UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
             } else {
                 self.error = "Could not load profile — please sign out and try again"
             }
@@ -208,6 +214,7 @@ class AuthManager: ObservableObject {
         isAuthenticated = false
         user = nil
         error = nil
+        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
     }
 }
 

@@ -86,11 +86,18 @@ struct SettingsView: View {
                 Hairline()
                 Spacer()
 
-                Button(action: { Task { await auth.signOut() } }) {
-                    Text("Sign out")
+                Button(action: {
+                    Task { await auth.signOut() }
+                }) {
+                    Text("SIGN OUT")
                         .font(NNFont.ui(11))
                         .tracking(3)
-                        .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                        .foregroundColor(NNColour.textPrimary.opacity(0.5))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(NNColour.glassLight)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(NNColour.glassBorder, lineWidth: 1))
+                        .cornerRadius(12)
                 }
                 .padding(.bottom, 16)
 
@@ -98,11 +105,14 @@ struct SettingsView: View {
                     .font(NNFont.ui(9))
                     .tracking(2)
                     .foregroundColor(NNColour.textPrimary.opacity(0.25))
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(.horizontal, 26)
             .padding(.top, 56)
-            .padding(.bottom, 44)
+            .padding(.bottom, 100)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showDreamerTypePicker) { DreamerTypePickerSheet() }
         .onAppear { Task { await purchase.updateSubscriptionStatus() } }
     }
