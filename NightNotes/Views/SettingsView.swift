@@ -1,9 +1,11 @@
 import SwiftUI
+import UserNotifications
 
 struct SettingsView: View {
     @EnvironmentObject var auth:    AuthManager
     @EnvironmentObject var purchase: PurchaseManager
     @State private var showDreamerTypePicker = false
+    @State private var morningReminderEnabled = UserDefaults.standard.bool(forKey: "morningReminderEnabled")
 
     var body: some View {
         ZStack {
@@ -33,7 +35,7 @@ struct SettingsView: View {
                     } else {
                         HStack {
                             let used = auth.user?.freeInterpretationsUsed ?? 0
-                            let remaining = max(0, 3 - used)
+                            let remaining = max(0, 7 - used)
                             Text("\(remaining) free dream\(remaining == 1 ? "" : "s") remaining")
                                 .font(.custom("PlayfairDisplay-Italic", size: 16))
                                 .foregroundColor(NNColour.textPrimary.opacity(0.7))
@@ -64,17 +66,19 @@ struct SettingsView: View {
                 Hairline()
 
                 settingsSection("Reminders") {
-                    HStack {
-                        Text("Morning prompt")
-                            .font(.custom("PlayfairDisplay-Italic", size: 16))
-                            .foregroundColor(NNColour.textPrimary.opacity(0.7))
-                        Spacer()
-                        Text("Off")
-                            .font(NNFont.ui(10))
-                            .tracking(2)
-                            .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                    Button(action: { toggleMorningReminder() }) {
+                        HStack {
+                            Text("Morning prompt")
+                                .font(.custom("PlayfairDisplay-Italic", size: 16))
+                                .foregroundColor(NNColour.textPrimary.opacity(0.7))
+                            Spacer()
+                            Text(morningReminderEnabled ? "On" : "Off")
+                                .font(NNFont.ui(10))
+                                .tracking(2)
+                                .foregroundColor(NNColour.textPrimary.opacity(morningReminderEnabled ? 0.7 : 0.4))
+                        }
+                        .padding(.vertical, 14)
                     }
-                    .padding(.vertical, 14)
                 }
 
                 Hairline()
@@ -112,6 +116,52 @@ struct SettingsView: View {
                 .padding(.bottom, 4)
             content()
         }
+    }
+
+    // ─────────────────────────────────────────
+    // MARK: - Morning Reminder
+    // ─────────────────────────────────────────
+
+    private func toggleMorningReminder() {
+        let newValue = !morningReminderEnabled
+        if newValue {
+            scheduleMorningReminder()
+        } else {
+            morningReminderEnabled = false
+            UserDefaults.standard.set(false, forKey: "morningReminderEnabled")
+            cancelMorningReminder()
+        }
+    }
+
+    private func scheduleMorningReminder() {
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            DispatchQueue.main.async {
+                guard granted else {
+                    morningReminderEnabled = false
+                    UserDefaults.standard.set(false, forKey: "morningReminderEnabled")
+                    return
+                }
+                morningReminderEnabled = true
+                UserDefaults.standard.set(true, forKey: "morningReminderEnabled")
+
+                let content = UNMutableNotificationContent()
+                content.title = "night notes"
+                content.body = "What did you dream last night?"
+                content.sound = .default
+
+                var dateComponents = DateComponents()
+                dateComponents.hour = 8
+                dateComponents.minute = 0
+                let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+                let request = UNNotificationRequest(identifier: "morningReminder", content: content, trigger: trigger)
+                center.add(request)
+            }
+        }
+    }
+
+    private func cancelMorningReminder() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["morningReminder"])
     }
 }
 

@@ -53,15 +53,17 @@ class AuthManager: ObservableObject {
 
     func fetchProfile(userId: UUID) async {
         do {
-            let profile: UserProfile = try await supabase
+            let data = try await supabase
                 .from("profiles")
                 .select()
                 .eq("id", value: userId.uuidString)
                 .single()
                 .execute()
-                .value
+                .data
+            let profile = try JSONDecoder.supabase.decode(UserProfile.self, from: data)
             user = profile
         } catch {
+            print("❌ fetchProfile error: \(error)")
             // Profile missing — create a minimal one so the app can function
             let newProfile = NewProfile(
                 id: userId,
@@ -76,22 +78,24 @@ class AuthManager: ObservableObject {
                     .execute()
                 await fetchProfile(userId: userId)
             } catch {
-                print("Profile upsert error: \(error)")
+                print("❌ Profile upsert error: \(error)")
             }
         }
     }
 
     private func fetchOrCreateProfile(userId: UUID, email: String?) async {
         do {
-            let profile: UserProfile = try await supabase
+            let data = try await supabase
                 .from("profiles")
                 .select()
                 .eq("id", value: userId.uuidString)
                 .single()
                 .execute()
-                .value
+                .data
+            let profile = try JSONDecoder.supabase.decode(UserProfile.self, from: data)
             user = profile
         } catch {
+            print("❌ fetchOrCreateProfile error: \(error)")
             // Profile doesn't exist — create it
             let newProfile = NewProfile(
                 id: userId,
@@ -106,7 +110,7 @@ class AuthManager: ObservableObject {
                     .execute()
                 await fetchProfile(userId: userId)
             } catch {
-                print("Profile create error: \(error)")
+                print("❌ Profile create error: \(error)")
             }
         }
     }
@@ -125,7 +129,7 @@ class AuthManager: ObservableObject {
                 .execute()
             await fetchProfile(userId: userId)
         } catch {
-            print("Dreamer type save error: \(error)")
+            print("❌ Dreamer type save error: \(error)")
         }
     }
 
@@ -145,7 +149,7 @@ class AuthManager: ObservableObject {
                 .execute()
             user?.freeInterpretationsUsed = current + 1
         } catch {
-            print("Increment error: \(error)")
+            print("❌ Increment error: \(error)")
         }
     }
 

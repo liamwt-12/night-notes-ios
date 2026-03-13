@@ -1,20 +1,23 @@
 import Foundation
 import StoreKit
+import Supabase
 
 // ─────────────────────────────────────────
 // MARK: - Purchase Manager
 // ─────────────────────────────────────────
-// Subscription-only: uk.nightnotes.subscription.monthly (£4.99/mo)
+// Subscriptions: monthly (£4.99/mo), yearly (save 42%)
 // Tokens IAP dropped — creates anxiety.
 
 @MainActor
 class PurchaseManager: ObservableObject {
     @Published var monthlyProduct: Product?
+    @Published var yearlyProduct: Product?
     @Published var isSubscribed = false
     @Published var isPurchasing = false
     @Published var error: String?
 
     private let monthlyId = "uk.nightnotes.subscription.monthly"
+    private let yearlyId  = "uk.nightnotes.subscription.yearly"
     private var updateTask: Task<Void, Never>?
 
     init() {
@@ -31,20 +34,39 @@ class PurchaseManager: ObservableObject {
 
     func loadProducts() async {
         do {
-            let products = try await Product.products(for: [monthlyId])
-            monthlyProduct = products.first
+            let products = try await Product.products(for: [monthlyId, yearlyId])
+            for product in products {
+                switch product.id {
+                case monthlyId: monthlyProduct = product
+                case yearlyId:  yearlyProduct  = product
+                default: break
+                }
+            }
         } catch {
-            print("Product load error: \(error)")
+            print("❌ Product load error: \(error)")
         }
         await updateSubscriptionStatus()
     }
 
     // ─────────────────────────────────────────
-    // MARK: - Purchase
+    // MARK: - Purchase Monthly
     // ─────────────────────────────────────────
 
     func purchaseMonthly() async {
         guard let product = monthlyProduct else { return }
+        await purchase(product)
+    }
+
+    // ─────────────────────────────────────────
+    // MARK: - Purchase Yearly
+    // ─────────────────────────────────────────
+
+    func purchaseYearly() async {
+        guard let product = yearlyProduct else { return }
+        await purchase(product)
+    }
+
+    private func purchase(_ product: Product) async {
         isPurchasing = true
         do {
             let result = try await product.purchase()
@@ -86,15 +108,30 @@ class PurchaseManager: ObservableObject {
     // ─────────────────────────────────────────
 
     func updateSubscriptionStatus() async {
+        var found = false
         for await result in Transaction.currentEntitlements {
             guard case .verified(let tx) = result,
-                  tx.productID == monthlyId,
+                  (tx.productID == monthlyId || tx.productID == yearlyId),
                   tx.revocationDate == nil
             else { continue }
-            isSubscribed = true
-            return
+            found = true
+            break
         }
-        isSubscribed = false
+        isSubscribed = found
+        await syncSubscriptionToSupabase(active: found)
+    }
+
+    private func syncSubscriptionToSupabase(active: Bool) async {
+        do {
+            let session = try await supabase.auth.session
+            try await supabase
+                .from("profiles")
+                .update(["subscription_active": active])
+                .eq("id", value: session.user.id.uuidString)
+                .execute()
+        } catch {
+            print("❌ Subscription sync error: \(error)")
+        }
     }
 
     // ─────────────────────────────────────────

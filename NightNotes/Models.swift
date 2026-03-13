@@ -93,12 +93,12 @@ struct UserProfile: Codable, Identifiable {
     }
 
     var canInterpret: Bool {
-        subscriptionActive || freeInterpretationsUsed < 3
+        subscriptionActive || freeInterpretationsUsed < 7
     }
 
     var interpretationsRemaining: Int {
         guard !subscriptionActive else { return Int.max }
-        return max(0, 3 - freeInterpretationsUsed)
+        return max(0, 7 - freeInterpretationsUsed)
     }
 }
 

@@ -84,7 +84,7 @@ export async function handler(event: any) {
     }
 
     const canInterpret =
-      profile.subscription_active || profile.free_interpretations_used < 3;
+      profile.subscription_active || profile.free_interpretations_used < 7;
 
     if (!canInterpret) {
       return { statusCode: 403, headers, body: JSON.stringify({ error: "No interpretations remaining" }) };

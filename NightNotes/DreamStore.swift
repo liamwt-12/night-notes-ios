@@ -13,16 +13,16 @@ class DreamStore: ObservableObject {
     func fetchDreams(userId: UUID) async {
         isLoading = true
         do {
-            let results: [DreamEntry] = try await supabase
+            let data = try await supabase
                 .from("dream_entries")
                 .select()
                 .eq("user_id", value: userId.uuidString)
                 .order("created_at", ascending: false)
                 .execute()
-                .value
-            dreams = results
+                .data
+            dreams = try JSONDecoder.supabase.decode([DreamEntry].self, from: data)
         } catch {
-            print("Fetch dreams error: \(error)")
+            print("❌ Fetch dreams error: \(error)")
         }
         isLoading = false
     }
@@ -132,6 +132,6 @@ class DreamStore: ObservableObject {
 
     var thisWeeksDreams: [DreamEntry] {
         let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        return dreams.filter { $0.createdAt >= cutoff }
+        return dreams.filter { ($0.createdAt ?? .distantPast) >= cutoff }
     }
 }

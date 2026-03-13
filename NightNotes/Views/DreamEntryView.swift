@@ -140,10 +140,18 @@ struct DreamEntryView: View {
 
                 if let err = errorMessage {
                     Text(err)
-                        .font(NNFont.ui(10))
-                        .foregroundColor(.white.opacity(0.7))
+                        .font(NNFont.ui(13))
+                        .foregroundColor(.white)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(NNColour.glassLight)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(NNColour.glassBorder, lineWidth: 1)
+                        )
+                        .cornerRadius(10)
                 }
             }
         }
@@ -215,7 +223,6 @@ struct DreamEntryView: View {
                     updatedDream.symbols = result.symbols
                     activeDream = updatedDream
                     await store.saveDream(updatedDream)
-                    await auth.incrementInterpretationsUsed()
                     await MainActor.run {
                         phase = .reading
                         let delays = [0.0, 0.28, 0.48, 0.64, 0.9]

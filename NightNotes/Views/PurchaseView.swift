@@ -49,43 +49,16 @@ struct PurchaseView: View {
 
                 Spacer()
 
-                if let product = purchase.monthlyProduct {
-                    VStack(spacing: 8) {
-                        Text(product.displayPrice + " / month")
-                            .font(NNFont.ui(11))
-                            .tracking(3)
-                            .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                subscriptionOptions
 
-                        Button(action: { Task { await purchase.purchaseMonthly() } }) {
-                            Group {
-                                if purchase.isPurchasing {
-                                    ProgressView().progressViewStyle(.circular).tint(NNColour.textPrimary)
-                                } else {
-                                    Text("Start exploring")
-                                        .font(NNFont.ui(15))
-                                        .tracking(2)
-                                        .foregroundColor(NNColour.textPrimary)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 20)
-                            .background(NNColour.glassLight)
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(NNColour.glassBorder, lineWidth: 1))
-                            .cornerRadius(14)
-                        }
-                        .disabled(purchase.isPurchasing)
-
-                        Button(action: { Task { await purchase.restorePurchases() } }) {
-                            Text("Restore purchases")
-                                .font(NNFont.ui(10))
-                                .tracking(2)
-                                .foregroundColor(NNColour.textPrimary.opacity(0.4))
-                        }
-                        .padding(.top, 4)
-                    }
-                } else {
-                    ProgressView().progressViewStyle(.circular).tint(NNColour.textPrimary.opacity(0.4))
+                Button(action: { Task { await purchase.restorePurchases() } }) {
+                    Text("Restore purchases")
+                        .font(NNFont.ui(10))
+                        .tracking(2)
+                        .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                        .frame(maxWidth: .infinity)
                 }
+                .padding(.top, 8)
             }
             .padding(.horizontal, 28)
             .padding(.top, 52)
@@ -95,6 +68,96 @@ struct PurchaseView: View {
                 withAnimation(.easeOut(duration: 0.6)) { appeared = true }
                 Task { await purchase.loadProducts() }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var subscriptionOptions: some View {
+        let hasProducts = purchase.yearlyProduct != nil || purchase.monthlyProduct != nil
+
+        if hasProducts {
+            VStack(spacing: 12) {
+                // ── Annual (recommended) ──────────────
+                if let yearly = purchase.yearlyProduct {
+                    Button(action: { Task { await purchase.purchaseYearly() } }) {
+                        VStack(spacing: 10) {
+                            HStack {
+                                Text("Yearly")
+                                    .font(NNFont.ui(10))
+                                    .tracking(3)
+                                    .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                                Spacer()
+                                Text("Save 42%")
+                                    .font(NNFont.ui(9))
+                                    .tracking(2)
+                                    .foregroundColor(NNColour.orbAmber)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(NNColour.orbAmber.opacity(0.15))
+                                    .clipShape(Capsule())
+                            }
+
+                            if purchase.isPurchasing {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .tint(NNColour.textPrimary)
+                                    .padding(.vertical, 4)
+                            } else {
+                                Text(yearly.displayPrice + " / year")
+                                    .font(NNFont.ui(15))
+                                    .tracking(2)
+                                    .foregroundColor(NNColour.textPrimary)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 18)
+                        .background(NNColour.glassLight)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(NNColour.glassBorder, lineWidth: 1)
+                        )
+                        .cornerRadius(14)
+                    }
+                    .disabled(purchase.isPurchasing)
+                }
+
+                // ── Monthly ──────────────────────────
+                if let monthly = purchase.monthlyProduct {
+                    Button(action: { Task { await purchase.purchaseMonthly() } }) {
+                        HStack {
+                            Text(monthly.displayPrice + " / month")
+                                .font(NNFont.ui(12))
+                                .tracking(2)
+                                .foregroundColor(NNColour.textPrimary.opacity(0.5))
+                            Spacer()
+                            if purchase.isPurchasing {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .tint(NNColour.textPrimary.opacity(0.4))
+                            } else {
+                                Text("Subscribe")
+                                    .font(NNFont.ui(11))
+                                    .tracking(2)
+                                    .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                        .background(NNColour.glassLight)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(NNColour.glassBorder, lineWidth: 1)
+                        )
+                        .cornerRadius(12)
+                    }
+                    .disabled(purchase.isPurchasing)
+                }
+            }
+        } else {
+            ProgressView()
+                .progressViewStyle(.circular)
+                .tint(NNColour.textPrimary.opacity(0.4))
+                .frame(maxWidth: .infinity)
         }
     }
 }

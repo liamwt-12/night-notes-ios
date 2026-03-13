@@ -119,7 +119,8 @@ struct DreamOrbRow: View {
         return GlowOrb(colour: colour, size: 6, animate: false)
     }
 
-    private func shortDate(_ date: Date) -> String {
+    private func shortDate(_ date: Date?) -> String {
+        guard let date else { return "sometime" }
         let f = DateFormatter()
         f.dateFormat = "d MMM"
         return f.string(from: date).lowercased()
