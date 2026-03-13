@@ -79,9 +79,9 @@ struct DreamEntryView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("FROM LAST NIGHT")
-                            .font(NNFont.ui(9))
+                            .font(NNFont.ui(10, weight: .light))
                             .tracking(5)
-                            .foregroundColor(NNColour.textPrimary.opacity(0.35))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.5))
                         Text("What did you dream?")
                             .font(NNFont.display(52))
                             .foregroundColor(NNColour.textPrimary)
@@ -136,46 +136,8 @@ struct DreamEntryView: View {
                     .transition(.opacity)
                 }
 
-                // Unveil button
-                let isEmpty = dreamText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                Button(action: {
-                    guard !isEmpty else { return }
-                    unveilFilling = true
-                    Task {
-                        try? await Task.sleep(nanoseconds: 300_000_000)
-                        await handleUnveil()
-                    }
-                }) {
-                    VStack(spacing: 12) {
-                        ZStack {
-                            // Outline version
-                            Text("Unveil")
-                                .font(NNFont.displayBold(52))
-                                .foregroundColor(.clear)
-                                .shadow(color: .white.opacity(0.6), radius: 0, x: 1, y: 0)
-                                .shadow(color: .white.opacity(0.6), radius: 0, x: -1, y: 0)
-                                .shadow(color: .white.opacity(0.6), radius: 0, x: 0, y: 1)
-                                .shadow(color: .white.opacity(0.6), radius: 0, x: 0, y: -1)
-                                .opacity(unveilFilling ? 0 : 1)
-
-                            // Fill version
-                            Text("Unveil")
-                                .font(NNFont.displayBold(52))
-                                .foregroundColor(.white)
-                                .opacity(unveilFilling ? 1 : 0)
-                        }
-                        .animation(.easeInOut(duration: 0.3), value: unveilFilling)
-
-                        Text("TAP TO UNVEIL")
-                            .font(NNFont.ui(9))
-                            .tracking(6)
-                            .foregroundColor(NNColour.textPrimary.opacity(0.4))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, textFocused ? 8 : 24)
-                }
-                .disabled(isEmpty)
-                .opacity(isEmpty ? 0.3 : 1)
+                // Unveil button — onTapGesture for reliable hit-testing with outlined text
+                unveilButton
 
                 if let err = errorMessage {
                     Text(err)
@@ -196,7 +158,7 @@ struct DreamEntryView: View {
         }
         .padding(.horizontal, 26)
         .padding(.top, 56)
-        .padding(.bottom, keyboardHeight > 0 ? keyboardHeight : 40)
+        .padding(.bottom, keyboardHeight > 0 ? keyboardHeight : 100)
         .animation(.easeOut(duration: 0.25), value: keyboardHeight)
         .animation(.easeInOut(duration: 0.2), value: textFocused)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
@@ -209,6 +171,52 @@ struct DreamEntryView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.easeOut(duration: 0.25)) {
                 keyboardHeight = 0
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────
+    // MARK: - Unveil Button
+    // ─────────────────────────────────────────
+
+    private var unveilButton: some View {
+        let isEmpty = dreamText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return VStack(spacing: 12) {
+            ZStack {
+                // Outline version — ghost text with shadow stroke
+                Text("Unveil")
+                    .font(NNFont.displayBold(52))
+                    .foregroundColor(.white.opacity(0.12))
+                    .shadow(color: .white.opacity(0.5), radius: 0, x: 1, y: 0)
+                    .shadow(color: .white.opacity(0.5), radius: 0, x: -1, y: 0)
+                    .shadow(color: .white.opacity(0.5), radius: 0, x: 0, y: 1)
+                    .shadow(color: .white.opacity(0.5), radius: 0, x: 0, y: -1)
+                    .opacity(unveilFilling ? 0 : 1)
+
+                // Fill version
+                Text("Unveil")
+                    .font(NNFont.displayBold(52))
+                    .foregroundColor(.white)
+                    .opacity(unveilFilling ? 1 : 0)
+            }
+            .animation(.easeInOut(duration: 0.3), value: unveilFilling)
+
+            Text("TAP TO UNVEIL")
+                .font(NNFont.ui(9))
+                .tracking(6)
+                .foregroundColor(NNColour.textPrimary.opacity(0.4))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, textFocused ? 12 : 28)
+        .contentShape(Rectangle())
+        .opacity(isEmpty ? 0.3 : 1)
+        .allowsHitTesting(!isEmpty)
+        .onTapGesture {
+            guard !isEmpty else { return }
+            unveilFilling = true
+            Task {
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                await handleUnveil()
             }
         }
     }
