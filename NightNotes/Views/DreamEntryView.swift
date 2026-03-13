@@ -250,6 +250,7 @@ struct DreamEntryView: View {
     // ─────────────────────────────────────────
 
     private func handleUnveil() async {
+        print("🔍 handleUnveil: auth.user = \(String(describing: auth.user?.id)), isAuthenticated = \(auth.isAuthenticated)")
         let trimmed = dreamText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         if let user = auth.user, !user.canInterpret {
@@ -260,7 +261,8 @@ struct DreamEntryView: View {
         textFocused = false
         errorMessage = nil
         guard let userId = auth.user?.id else {
-            await auth.checkSession()
+            let recovered = await auth.recoverUser()
+            print("🔍 handleUnveil: recoverUser returned \(recovered), user is now \(String(describing: auth.user?.id))")
             guard let userId = auth.user?.id else {
                 errorMessage = "Session expired — please sign out and back in"
                 unveilFilling = false

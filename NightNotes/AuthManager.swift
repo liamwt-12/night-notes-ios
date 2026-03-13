@@ -18,6 +18,7 @@ class AuthManager: ObservableObject {
         do {
             let session = try await supabase.auth.session
             let success = await fetchProfile(userId: session.user.id)
+            print("🔍 checkSession: fetchProfile returned \(success), user is now: \(String(describing: self.user?.id))")
             if success && user != nil {
                 isAuthenticated = true
             } else {
@@ -30,6 +31,20 @@ class AuthManager: ObservableObject {
             isAuthenticated = false
         }
         isLoading = false
+    }
+
+    /// Attempt to recover auth.user from the existing session WITHOUT setting isLoading.
+    /// This avoids tearing down the view hierarchy when called from inside MainTabView.
+    func recoverUser() async -> Bool {
+        do {
+            let session = try await supabase.auth.session
+            let success = await fetchProfile(userId: session.user.id)
+            print("🔍 recoverUser: fetchProfile returned \(success), user is now: \(String(describing: self.user?.id))")
+            return success && user != nil
+        } catch {
+            print("❌ recoverUser: no valid session — \(error)")
+            return false
+        }
     }
 
     // ─────────────────────────────────────────
