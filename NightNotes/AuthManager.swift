@@ -9,11 +9,6 @@ class AuthManager: ObservableObject {
     @Published var user: UserProfile?
     @Published var error: String?
 
-    init() {
-        // ⚠️ Temporary: reset for testing fresh onboarding — remove after confirming
-        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
-    }
-
     // ─────────────────────────────────────────
     // MARK: - Session Check
     // ─────────────────────────────────────────

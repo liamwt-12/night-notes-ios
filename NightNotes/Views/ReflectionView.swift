@@ -17,7 +17,7 @@ struct ReflectionView: View {
     @State private var showCursor = true
 
     // Share
-    @State private var showShareSheet = false
+    @State private var showSharePreview = false
     @State private var shareImage: UIImage?
 
     // Review
@@ -78,7 +78,7 @@ struct ReflectionView: View {
 
         Task {
             for i in 1...wordCount {
-                try? await Task.sleep(nanoseconds: 40_000_000)
+                try? await Task.sleep(nanoseconds: 55_000_000)
                 await MainActor.run { displayedWordCount = i }
             }
             await MainActor.run { isTyping = false }
@@ -142,40 +142,44 @@ struct ReflectionView: View {
                 }
 
                 if lineVisible.indices.contains(3) && lineVisible[3] {
-                    ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            // Typed-out interpretation with cursor
-                            (Text(displayedText)
-                                .font(.custom("PlayfairDisplay-Italic", size: 17))
-                                .foregroundColor(NNColour.textPrimary.opacity(0.85))
-                            + Text(isTyping && showCursor ? "▏" : "")
-                                .font(.system(size: 14))
-                                .foregroundColor(.white.opacity(0.6))
-                            )
-                            .lineSpacing(6)
-                            .kerning(0.3)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.bottom, 32)
+                    ScrollViewReader { proxy in
+                        ScrollView(showsIndicators: false) {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Color.clear.frame(height: 0).id("top")
 
-                            // Dream Doppelgänger
-                            if doppelgangerVisible {
-                                doppelgangerSection
-                                    .transition(.opacity)
-                                    .padding(.bottom, 32)
+                                // Typed-out interpretation with cursor
+                                (Text(displayedText)
+                                    .font(.custom("PlayfairDisplay-Italic", size: 17))
+                                    .foregroundColor(NNColour.textPrimary.opacity(0.85))
+                                + Text(isTyping && showCursor ? "▏" : "")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.white.opacity(0.6))
+                                )
+                                .lineSpacing(6)
+                                .kerning(0.3)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.bottom, 32)
+
+                                // Dream Doppelgänger
+                                if doppelgangerVisible {
+                                    doppelgangerSection
+                                        .transition(.opacity)
+                                        .padding(.bottom, 32)
+                                }
+
+                                Spacer().frame(height: 120)
                             }
-
-                            Spacer().frame(height: 120)
+                        }
+                        .onAppear {
+                            proxy.scrollTo("top", anchor: .top)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                withAnimation(.easeOut(duration: 0.4)) {
+                                    doppelgangerVisible = true
+                                }
+                            }
                         }
                     }
                     .transition(.opacity)
-                    .onAppear {
-                        // Show doppelgänger after a delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                            withAnimation(.easeOut(duration: 0.4)) {
-                                doppelgangerVisible = true
-                            }
-                        }
-                    }
                 }
 
                 Spacer()
@@ -196,6 +200,8 @@ struct ReflectionView: View {
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(NNColour.glassBorder, lineWidth: 0.5))
                             .cornerRadius(14)
                     }
+                    .padding(.top, 28)
+                    .padding(.bottom, 20)
                     Button(action: onNewDream) {
                         Text("New dream")
                             .font(NNFont.ui(12))
@@ -205,7 +211,6 @@ struct ReflectionView: View {
                 }
                 .padding(.horizontal, 26)
                 .padding(.bottom, 44)
-                .padding(.top, 16)
                 .background(
                     LinearGradient(
                         colors: [NNColour.void.opacity(0), NNColour.void.opacity(0.85), NNColour.void.opacity(0.95)],
@@ -217,12 +222,9 @@ struct ReflectionView: View {
                 .transition(.opacity)
             }
         }
-        .sheet(isPresented: $showShareSheet) {
+        .sheet(isPresented: $showSharePreview) {
             if let image = shareImage {
-                ShareSheet(items: [
-                    image,
-                    "night notes — dream interpretation\ntrynightnotes.com" as String
-                ])
+                SharePreviewSheet(image: image)
             }
         }
     }
@@ -301,11 +303,13 @@ struct ReflectionView: View {
     @MainActor
     private func prepareShareImage() {
         let card = ShareCardView(interpretation: interpretation)
+            .environment(\.colorScheme, .dark)
         let renderer = ImageRenderer(content: card)
-        renderer.scale = 3
+        renderer.scale = UIScreen.main.scale
+        renderer.proposedSize = .init(width: 1080, height: 1080)
         if let image = renderer.uiImage {
             shareImage = image
-            showShareSheet = true
+            showSharePreview = true
         }
     }
 
@@ -469,7 +473,7 @@ struct ShareCardView: View {
             Color(hex: "0b0717")
 
             RadialGradient(
-                colors: [Color(hex: "3d1654").opacity(0.6), Color.clear],
+                colors: [Color(hex: "3d1654").opacity(0.5), Color.clear],
                 center: .center,
                 startRadius: 0,
                 endRadius: 500
@@ -477,19 +481,19 @@ struct ShareCardView: View {
 
             VStack(spacing: 0) {
                 Text("night notes")
-                    .font(.custom("DMSans-Regular", size: 18).weight(.ultraLight))
+                    .font(.custom("DMSans-Regular", size: 16).weight(.ultraLight))
                     .tracking(8)
-                    .foregroundColor(Color(hex: "f5ecff").opacity(0.5))
-                    .padding(.top, 80)
+                    .foregroundColor(Color(hex: "f5ecff").opacity(0.45))
+                    .padding(.top, 70)
 
                 Spacer()
 
                 Text(firstTwoSentences)
-                    .font(.custom("PlayfairDisplay-Italic", size: 26))
+                    .font(.custom("PlayfairDisplay-Italic", size: 24))
                     .foregroundColor(Color(hex: "f5ecff"))
                     .lineSpacing(8)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 80)
+                    .padding(.horizontal, 70)
 
                 Spacer()
 
@@ -499,10 +503,10 @@ struct ShareCardView: View {
                     .padding(.bottom, 20)
 
                 Text("trynightnotes.com")
-                    .font(.custom("DMSans-Regular", size: 12).weight(.ultraLight))
+                    .font(.custom("DMSans-Regular", size: 11).weight(.ultraLight))
                     .tracking(4)
-                    .foregroundColor(Color(hex: "f5ecff").opacity(0.4))
-                    .padding(.bottom, 80)
+                    .foregroundColor(Color(hex: "f5ecff").opacity(0.35))
+                    .padding(.bottom, 70)
             }
         }
         .frame(width: 1080, height: 1080)
@@ -510,15 +514,109 @@ struct ShareCardView: View {
 }
 
 // ─────────────────────────────────────────
-// MARK: - UIKit Share Sheet
+// MARK: - Share Preview Sheet
 // ─────────────────────────────────────────
 
-struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
+struct SharePreviewSheet: View {
+    let image: UIImage
+    @Environment(\.dismiss) var dismiss
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    var body: some View {
+        ZStack {
+            Color(hex: "0b0717").ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text("Share")
+                        .font(.custom("PlayfairDisplay-Italic", size: 22))
+                        .foregroundColor(NNColour.textPrimary)
+                    Spacer()
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.5))
+                            .frame(width: 32, height: 32)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+                .padding(.bottom, 20)
+
+                // Card preview
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(1, contentMode: .fit)
+                    .cornerRadius(20)
+                    .shadow(color: Color(hex: "c45eab").opacity(0.3), radius: 40)
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 32)
+
+                // Share destinations
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 20) {
+                        shareDestination(icon: "camera", label: "Stories") {
+                            shareToInstagramStories()
+                        }
+                        shareDestination(icon: "message", label: "Messages") {
+                            openSystemShare()
+                        }
+                        shareDestination(icon: "square.and.arrow.down", label: "Save") {
+                            saveToPhotos()
+                        }
+                        shareDestination(icon: "square.and.arrow.up", label: "More") {
+                            openSystemShare()
+                        }
+                    }
+                    .padding(.horizontal, 32)
+                }
+
+                Spacer()
+            }
+        }
     }
 
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+    @ViewBuilder
+    private func shareDestination(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(NNColour.textPrimary.opacity(0.7))
+                    .frame(width: 56, height: 56)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+                Text(label)
+                    .font(NNFont.ui(10))
+                    .foregroundColor(NNColour.textPrimary.opacity(0.5))
+            }
+        }
+    }
+
+    private func shareToInstagramStories() {
+        guard let url = URL(string: "instagram-stories://share?source_application=\(Bundle.main.bundleIdentifier ?? "")"),
+              UIApplication.shared.canOpenURL(url),
+              let imageData = image.pngData()
+        else {
+            openSystemShare()
+            return
+        }
+        UIPasteboard.general.setData(imageData, forPasteboardType: "com.instagram.sharedSticker.backgroundImage")
+        UIApplication.shared.open(url)
+    }
+
+    private func saveToPhotos() {
+        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+        dismiss()
+    }
+
+    private func openSystemShare() {
+        guard let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+              let root = scene.windows.first?.rootViewController
+        else { return }
+        var vc = root
+        while let presented = vc.presentedViewController { vc = presented }
+        let av = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+        vc.present(av, animated: true)
+    }
 }

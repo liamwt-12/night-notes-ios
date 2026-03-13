@@ -23,11 +23,17 @@ struct DreamEntryView: View {
     @State private var errorMessage: String?
     @State private var keyboardHeight: CGFloat = 0
     @State private var unveilFilling = false
+    @State private var thinkingDotIndex = 0
+    @State private var headingSize: CGFloat = 52
 
     var body: some View {
         ZStack {
             AuroraView(hueShift: auroraHueShift, scaleBoost: auroraScale)
                 .brightness(auroraBrightness)
+                .overlay(
+                    Color.black.opacity(phase == .unveiling ? 0.35 : 0)
+                        .animation(.easeInOut(duration: 0.4), value: phase)
+                )
 
             switch phase {
             case .entry:
@@ -83,7 +89,7 @@ struct DreamEntryView: View {
                             .tracking(5)
                             .foregroundColor(NNColour.textPrimary.opacity(0.5))
                         Text("What did you dream?")
-                            .font(NNFont.display(52))
+                            .font(NNFont.display(headingSize))
                             .foregroundColor(NNColour.textPrimary)
                             .lineSpacing(-2)
                             .lineLimit(2)
@@ -173,6 +179,11 @@ struct DreamEntryView: View {
                 keyboardHeight = 0
             }
         }
+        .onChange(of: textFocused) { focused in
+            withAnimation(.easeInOut(duration: 0.3)) {
+                headingSize = focused ? 30 : 52
+            }
+        }
     }
 
     // ─────────────────────────────────────────
@@ -183,19 +194,22 @@ struct DreamEntryView: View {
         let isEmpty = dreamText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return VStack(spacing: 12) {
             ZStack {
-                // Outline version — ghost text with shadow stroke
-                Text("Unveil")
-                    .font(NNFont.displayBold(52))
-                    .foregroundColor(.white.opacity(0.12))
-                    .shadow(color: .white.opacity(0.5), radius: 0, x: 1, y: 0)
-                    .shadow(color: .white.opacity(0.5), radius: 0, x: -1, y: 0)
-                    .shadow(color: .white.opacity(0.5), radius: 0, x: 0, y: 1)
-                    .shadow(color: .white.opacity(0.5), radius: 0, x: 0, y: -1)
-                    .opacity(unveilFilling ? 0 : 1)
+                // Hollow outline version — glow layer + dark mask = outlined illusion
+                ZStack {
+                    Text("Unveil")
+                        .font(.custom("PlayfairDisplay-BlackItalic", size: 56))
+                        .foregroundColor(.white.opacity(0.5))
+                        .blur(radius: 1)
+                    Text("Unveil")
+                        .font(.custom("PlayfairDisplay-BlackItalic", size: 56))
+                        .foregroundColor(Color(hex: "0b0717").opacity(0.85))
+                }
+                .shadow(color: Color(red: 0.77, green: 0.37, blue: 0.67).opacity(0.4), radius: 16)
+                .opacity(unveilFilling ? 0 : 1)
 
                 // Fill version
                 Text("Unveil")
-                    .font(NNFont.displayBold(52))
+                    .font(.custom("PlayfairDisplay-BlackItalic", size: 56))
                     .foregroundColor(.white)
                     .opacity(unveilFilling ? 1 : 0)
             }
@@ -204,7 +218,7 @@ struct DreamEntryView: View {
             Text("TAP TO UNVEIL")
                 .font(NNFont.ui(9))
                 .tracking(6)
-                .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                .foregroundColor(NNColour.textPrimary.opacity(0.3))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, textFocused ? 12 : 28)
@@ -234,13 +248,33 @@ struct DreamEntryView: View {
                     .opacity(orbOpacity)
                 Spacer()
             }
-            VStack {
+            VStack(spacing: 20) {
                 Spacer()
                 Text("Thinking about it…")
                     .font(.custom("PlayfairDisplay-Italic", size: 18))
                     .foregroundColor(NNColour.textPrimary.opacity(0.6))
                     .kerning(0.3)
-                    .padding(.bottom, 80)
+
+                HStack(spacing: 8) {
+                    ForEach(0..<3, id: \.self) { i in
+                        Circle()
+                            .fill(.white.opacity(thinkingDotIndex == i ? 0.9 : 0.4))
+                            .frame(width: 6, height: 6)
+                            .animation(.easeInOut(duration: 0.3), value: thinkingDotIndex)
+                    }
+                }
+                .padding(.bottom, 80)
+            }
+            .onAppear {
+                Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { timer in
+                    DispatchQueue.main.async {
+                        guard phase == .unveiling else {
+                            timer.invalidate()
+                            return
+                        }
+                        thinkingDotIndex = (thinkingDotIndex + 1) % 3
+                    }
+                }
             }
         }
     }

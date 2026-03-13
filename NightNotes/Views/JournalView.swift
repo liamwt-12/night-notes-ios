@@ -121,7 +121,7 @@ struct JournalView: View {
                     }
 
                     // Section header
-                    if !store.thisWeeksDreams.isEmpty {
+                    if store.dreams.count >= 7 {
                         Text("THIS WEEK")
                             .font(NNFont.ui(9))
                             .tracking(6)

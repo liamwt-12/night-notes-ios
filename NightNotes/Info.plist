@@ -26,6 +26,12 @@
 	<string>Night Notes needs microphone to record your voice.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Night Notes uses speech to transcribe your dreams.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Night Notes needs photo library access to save your dream share card.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>instagram-stories</string>
+	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>PlayfairDisplay-BlackItalic.ttf</string>
