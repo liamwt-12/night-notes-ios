@@ -14,39 +14,44 @@ let supabase = SupabaseClient(
 // MARK: - Custom Date Decoder
 // ─────────────────────────────────────────
 // Supabase returns timestamps like "2026-03-10 17:36:10.9+00"
-// which Swift's default JSONDecoder cannot parse. This decoder
-// normalises to ISO 8601 before parsing.
+// which Swift's default JSONDecoder cannot parse.
+//
+// NOTE: .convertFromSnakeCase is intentionally omitted — UserProfile,
+// DreamEntry, and NewProfile all have explicit CodingKeys that map
+// snake_case. Adding the strategy would double-convert and break decoding.
 
 extension JSONDecoder {
-    static let supabase: JSONDecoder = {
+    static var supabase: JSONDecoder {
         let decoder = JSONDecoder()
+
+        let formatter1 = DateFormatter()
+        formatter1.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSSX"
+        formatter1.locale = Locale(identifier: "en_US_POSIX")
+
+        let formatter2 = DateFormatter()
+        formatter2.dateFormat = "yyyy-MM-dd HH:mm:ss.SSX"
+        formatter2.locale = Locale(identifier: "en_US_POSIX")
+
+        let formatter3 = DateFormatter()
+        formatter3.dateFormat = "yyyy-MM-dd HH:mm:ssX"
+        formatter3.locale = Locale(identifier: "en_US_POSIX")
+
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
-            let raw = try container.decode(String.self)
+            let str = try container.decode(String.self)
 
-            // Normalise Supabase format → ISO 8601
-            // "2026-03-10 17:36:10.9+00" → "2026-03-10T17:36:10.9+00:00"
-            var s = raw
-            if let spaceRange = s.range(of: " ") {
-                s.replaceSubrange(spaceRange, with: "T")
-            }
-            if s.range(of: #"[+-]\d{2}$"#, options: .regularExpression) != nil {
-                s += ":00"
-            }
+            if let d = formatter1.date(from: str) { return d }
+            if let d = formatter2.date(from: str) { return d }
+            if let d = formatter3.date(from: str) { return d }
+            if let d = iso.date(from: str) { return d }
 
-            let isoFrac = ISO8601DateFormatter()
-            isoFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = isoFrac.date(from: s) { return date }
-
-            let iso = ISO8601DateFormatter()
-            iso.formatOptions = [.withInternetDateTime]
-            if let date = iso.date(from: s) { return date }
-
-            throw DecodingError.dataCorruptedError(
-                in: container,
-                debugDescription: "❌ Cannot decode date string: \(raw)"
-            )
+            // Never fail on a date — fall back to now so the profile still loads
+            return Date()
         }
+
         return decoder
-    }()
+    }
 }

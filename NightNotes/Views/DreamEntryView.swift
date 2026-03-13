@@ -38,6 +38,7 @@ struct DreamEntryView: View {
                 }
             }
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .animation(.easeInOut(duration: 0.4), value: phase)
         .sheet(isPresented: $showPaywall) { PurchaseView() }
     }
@@ -116,7 +117,7 @@ struct DreamEntryView: View {
                     .transition(.opacity)
                 }
 
-                Button(action: handleUnveil) {
+                Button(action: { Task { await handleUnveil() } }) {
                     Text("Look closer")
                         .font(.custom("PlayfairDisplay-Italic", size: 18))
                         .foregroundColor(
@@ -154,10 +155,11 @@ struct DreamEntryView: View {
                         .cornerRadius(10)
                 }
             }
+            .padding(.bottom, 40)
         }
         .padding(.horizontal, 26)
         .padding(.top, 56)
-        .padding(.bottom, 40)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .animation(.easeInOut(duration: 0.2), value: textFocused)
     }
 
@@ -180,7 +182,7 @@ struct DreamEntryView: View {
         }
     }
 
-    private func handleUnveil() {
+    private func handleUnveil() async {
         let trimmed = dreamText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         if let user = auth.user, !user.canInterpret {
@@ -190,7 +192,16 @@ struct DreamEntryView: View {
         textFocused = false
         errorMessage = nil
         guard let userId = auth.user?.id else {
-            errorMessage = "Not signed in"
+            // Try to recover session before giving up
+            await auth.checkSession()
+            guard let userId = auth.user?.id else {
+                errorMessage = "Session expired — please sign out and back in"
+                return
+            }
+            // Continue with recovered userId
+            let dream = DreamEntry(userId: userId, rawText: trimmed, dreamerType: auth.user?.dreamerType ?? .fragments)
+            activeDream = dream
+            triggerUnveil(dream: dream)
             return
         }
         let dream = DreamEntry(userId: userId, rawText: trimmed, dreamerType: auth.user?.dreamerType ?? .fragments)

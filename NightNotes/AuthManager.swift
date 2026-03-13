@@ -53,15 +53,16 @@ class AuthManager: ObservableObject {
 
     func fetchProfile(userId: UUID) async {
         do {
-            let data = try await supabase
+            let response = try await supabase
                 .from("profiles")
                 .select()
                 .eq("id", value: userId.uuidString)
                 .single()
                 .execute()
-                .data
-            let profile = try JSONDecoder.supabase.decode(UserProfile.self, from: data)
+            print("🔍 Raw profile JSON: \(String(data: response.data, encoding: .utf8) ?? "nil")")
+            let profile = try JSONDecoder.supabase.decode(UserProfile.self, from: response.data)
             user = profile
+            print("✅ Profile loaded: \(profile.id), used: \(profile.freeInterpretationsUsed), subscribed: \(profile.subscriptionActive)")
         } catch {
             print("❌ fetchProfile error: \(error)")
             // Profile missing — create a minimal one so the app can function
@@ -85,15 +86,16 @@ class AuthManager: ObservableObject {
 
     private func fetchOrCreateProfile(userId: UUID, email: String?) async {
         do {
-            let data = try await supabase
+            let response = try await supabase
                 .from("profiles")
                 .select()
                 .eq("id", value: userId.uuidString)
                 .single()
                 .execute()
-                .data
-            let profile = try JSONDecoder.supabase.decode(UserProfile.self, from: data)
+            print("🔍 Raw profile JSON: \(String(data: response.data, encoding: .utf8) ?? "nil")")
+            let profile = try JSONDecoder.supabase.decode(UserProfile.self, from: response.data)
             user = profile
+            print("✅ Profile loaded: \(profile.id), used: \(profile.freeInterpretationsUsed), subscribed: \(profile.subscriptionActive)")
         } catch {
             print("❌ fetchOrCreateProfile error: \(error)")
             // Profile doesn't exist — create it
