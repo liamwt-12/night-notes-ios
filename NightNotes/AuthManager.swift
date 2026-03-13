@@ -18,7 +18,6 @@ class AuthManager: ObservableObject {
         do {
             let session = try await supabase.auth.session
             let success = await fetchProfile(userId: session.user.id)
-            print("🧪 After fetchProfile — auth.user is: \(String(describing: self.user))")
             if success && user != nil {
                 isAuthenticated = true
             } else {
@@ -72,10 +71,8 @@ class AuthManager: ObservableObject {
                 .eq("id", value: userId.uuidString)
                 .single()
                 .execute()
-            print("🔍 Raw profile JSON: \(String(data: response.data, encoding: .utf8) ?? "nil")")
             let profile = try JSONDecoder.supabase.decode(UserProfile.self, from: response.data)
             user = profile
-            print("✅ Profile loaded: \(profile.id), used: \(profile.freeInterpretationsUsed), subscribed: \(profile.subscriptionActive)")
             return true
         } catch {
             print("❌ fetchProfile error: \(error)")
@@ -99,7 +96,8 @@ class AuthManager: ObservableObject {
                     .from("profiles")
                     .upsert(newProfile)
                     .execute()
-                print("✅ Profile upserted, retrying fetch...")
+
+
                 return await fetchProfile(userId: userId, retried: true)
             } catch {
                 print("❌ Profile upsert failed — full error object: \(error)")
@@ -119,10 +117,8 @@ class AuthManager: ObservableObject {
                 .eq("id", value: userId.uuidString)
                 .single()
                 .execute()
-            print("🔍 Raw profile JSON: \(String(data: response.data, encoding: .utf8) ?? "nil")")
             let profile = try JSONDecoder.supabase.decode(UserProfile.self, from: response.data)
             user = profile
-            print("✅ Profile loaded: \(profile.id), used: \(profile.freeInterpretationsUsed), subscribed: \(profile.subscriptionActive)")
             return true
         } catch {
             print("❌ fetchOrCreateProfile error: \(error)")
@@ -138,7 +134,8 @@ class AuthManager: ObservableObject {
                     .from("profiles")
                     .insert(newProfile)
                     .execute()
-                print("✅ Profile inserted, retrying fetch...")
+
+
                 return await fetchProfile(userId: userId, retried: true)
             } catch {
                 print("❌ Profile create failed — full error object: \(error)")

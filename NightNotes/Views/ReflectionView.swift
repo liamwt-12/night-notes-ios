@@ -23,58 +23,67 @@ struct ReflectionView: View {
     }
 
     private var readingContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Button(action: onNewDream) {
-                    Text("← new dream")
-                        .font(NNFont.ui(10))
-                        .tracking(2)
-                        .foregroundColor(NNColour.textPrimary.opacity(0.4))
+        ZStack(alignment: .bottom) {
+            // ── Scrollable content ───────────────
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Button(action: onNewDream) {
+                        Text("← new dream")
+                            .font(NNFont.ui(10))
+                            .tracking(2)
+                            .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                    }
+                    Spacer()
                 }
+                .padding(.bottom, 28)
+
+                Text("One way to see it")
+                    .font(NNFont.display(48))
+                    .foregroundColor(NNColour.textPrimary)
+                    .opacity(lineVisible.indices.contains(0) && lineVisible[0] ? 1 : 0)
+                    .offset(y: lineVisible.indices.contains(0) && lineVisible[0] ? 0 : 16)
+                    .animation(.easeOut(duration: 0.7), value: lineVisible.first)
+                    .padding(.bottom, 24)
+
+                if lineVisible.indices.contains(1) && lineVisible[1] {
+                    HStack(spacing: 0) {
+                        Rectangle()
+                            .fill(NNColour.textPrimary.opacity(0.2))
+                            .frame(width: 1)
+                        Text("\"\(dream.rawText.prefix(80))…\"")
+                            .font(.custom("PlayfairDisplay-Italic", size: 13))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.45))
+                            .lineSpacing(3)
+                            .lineLimit(2)
+                            .padding(.leading, 14)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    .padding(.bottom, 16)
+                }
+
+                if lineVisible.indices.contains(2) && lineVisible[2] {
+                    Hairline().transition(.opacity).padding(.bottom, 16)
+                }
+
+                if lineVisible.indices.contains(3) && lineVisible[3] {
+                    ScrollView(showsIndicators: false) {
+                        Text(interpretation)
+                            .font(.custom("PlayfairDisplay-Italic", size: 18))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.85))
+                            .lineSpacing(6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.bottom, 120)
+                    }
+                    .transition(.opacity)
+                }
+
                 Spacer()
             }
-            .padding(.bottom, 28)
+            .padding(.horizontal, 26)
+            .padding(.top, 56)
 
-            Text("One way to see it")
-                .font(NNFont.display(48))
-                .foregroundColor(NNColour.textPrimary)
-                .opacity(lineVisible.indices.contains(0) && lineVisible[0] ? 1 : 0)
-                .offset(y: lineVisible.indices.contains(0) && lineVisible[0] ? 0 : 16)
-                .animation(.easeOut(duration: 0.7), value: lineVisible.first)
-                .padding(.bottom, 24)
-
-            if lineVisible.indices.contains(1) && lineVisible[1] {
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(NNColour.textPrimary.opacity(0.2))
-                        .frame(width: 1)
-                    Text("\"\(dream.rawText.prefix(80))…\"")
-                        .font(.custom("PlayfairDisplay-Italic", size: 13))
-                        .foregroundColor(NNColour.textPrimary.opacity(0.45))
-                        .lineSpacing(3)
-                        .padding(.leading, 14)
-                }
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
-                .padding(.bottom, 22)
-            }
-
-            if lineVisible.indices.contains(2) && lineVisible[2] {
-                Hairline().transition(.opacity).padding(.bottom, 22)
-            }
-
-            if lineVisible.indices.contains(3) && lineVisible[3] {
-                ScrollView(showsIndicators: false) {
-                    Text(interpretation)
-                        .font(.custom("PlayfairDisplay-Italic", size: 18))
-                        .foregroundColor(NNColour.textPrimary.opacity(0.85))
-                        .lineSpacing(6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .transition(.opacity)
-            }
-
-            Spacer()
-
+            // ── Fixed bottom overlay ─────────────
             if lineVisible.indices.contains(4) && lineVisible[4] {
                 VStack(spacing: 12) {
                     Button(action: { withAnimation { landingPhase = true } }) {
@@ -95,12 +104,20 @@ struct ReflectionView: View {
                             .foregroundColor(NNColour.textPrimary.opacity(0.4))
                     }
                 }
+                .padding(.horizontal, 26)
+                .padding(.bottom, 44)
+                .padding(.top, 16)
+                .background(
+                    LinearGradient(
+                        colors: [NNColour.void.opacity(0), NNColour.void.opacity(0.85), NNColour.void.opacity(0.95)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .allowsHitTesting(false)
+                )
                 .transition(.opacity)
             }
         }
-        .padding(.horizontal, 26)
-        .padding(.top, 56)
-        .padding(.bottom, 44)
     }
 
     private var landingContent: some View {

@@ -96,7 +96,7 @@ struct TabBarItem: View {
             VStack(spacing: 4) {
                 Text(symbol)
                     .font(.system(size: 18))
-                    .foregroundColor(isActive ? NNColour.textPrimary : NNColour.textMuted.opacity(0.4))
+                    .foregroundColor(isActive ? NNColour.textPrimary : NNColour.textMuted.opacity(0.5))
                     .shadow(
                         color: isActive ? NNColour.orbRose.opacity(0.4) : .clear,
                         radius: isActive ? 6 : 0
@@ -105,7 +105,7 @@ struct TabBarItem: View {
                 Text(label)
                     .font(NNFont.ui(9))
                     .tracking(2)
-                    .foregroundColor(isActive ? NNColour.textPrimary.opacity(0.8) : NNColour.textMuted.opacity(0.35))
+                    .foregroundColor(isActive ? NNColour.textPrimary.opacity(0.8) : NNColour.textMuted.opacity(0.5))
             }
             .frame(maxWidth: .infinity)
         }

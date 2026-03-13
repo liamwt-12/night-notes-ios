@@ -132,20 +132,20 @@ struct DreamEntryView: View {
 
                 Button(action: { Task { await handleUnveil() } }) {
                     Text("Look closer")
-                        .font(.custom("PlayfairDisplay-Italic", size: 18))
+                        .font(.custom("PlayfairDisplay-Italic", size: 20))
                         .foregroundColor(
                             dreamText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                 ? NNColour.textPrimary.opacity(0.3)
                                 : NNColour.textPrimary
                         )
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
+                        .padding(.vertical, 22)
                         .overlay(
                             RoundedRectangle(cornerRadius: 14)
                                 .stroke(
                                     dreamText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                         ? NNColour.glassBorder
-                                        : NNColour.textPrimary.opacity(0.3),
+                                        : Color.white.opacity(0.15),
                                     lineWidth: 1
                                 )
                         )
