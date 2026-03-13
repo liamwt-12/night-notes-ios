@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct DreamEntryView: View {
     @EnvironmentObject var auth:    AuthManager
@@ -19,6 +20,7 @@ struct DreamEntryView: View {
     @State private var activeDream: DreamEntry?
     @State private var showPaywall = false
     @State private var errorMessage: String?
+    @State private var keyboardHeight: CGFloat = 0
 
     var body: some View {
         ZStack {
@@ -38,70 +40,81 @@ struct DreamEntryView: View {
                 }
             }
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
         .animation(.easeInOut(duration: 0.4), value: phase)
         .sheet(isPresented: $showPaywall) { PurchaseView() }
     }
 
+    // ─────────────────────────────────────────
+    // MARK: - Entry Content
+    // ─────────────────────────────────────────
+
     private var entryContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("night notes")
-                    .font(NNFont.ui(11))
-                    .tracking(6)
-                    .foregroundColor(NNColour.textPrimary.opacity(0.5))
-                Spacer()
-                if let user = auth.user, !user.subscriptionActive {
-                    Text("\(user.interpretationsRemaining) dreams left")
+        VStack(spacing: 0) {
+            // ── Scrollable upper content ─────────
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Text("night notes")
+                            .font(NNFont.ui(11))
+                            .tracking(6)
+                            .foregroundColor(NNColour.textPrimary.opacity(0.5))
+                        Spacer()
+                        if let user = auth.user, !user.subscriptionActive {
+                            Text("\(user.interpretationsRemaining) dreams left")
+                                .font(NNFont.ui(10))
+                                .tracking(2)
+                                .foregroundColor(NNColour.textPrimary.opacity(0.5))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 5)
+                                .background(NNColour.glassLight)
+                                .overlay(Capsule().stroke(NNColour.glassBorder, lineWidth: 1))
+                                .clipShape(Capsule())
+                        }
+                    }
+                    .padding(.bottom, 32)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("From last night")
+                            .font(NNFont.ui(12))
+                            .tracking(2)
+                            .foregroundColor(NNColour.textPrimary.opacity(0.55))
+                        Text("What did you dream?")
+                            .font(NNFont.display(46))
+                            .foregroundColor(NNColour.textPrimary)
+                            .lineLimit(2)
+                    }
+                    .padding(.bottom, 24)
+
+                    Text(timeLabel())
                         .font(NNFont.ui(10))
                         .tracking(2)
-                        .foregroundColor(NNColour.textPrimary.opacity(0.5))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .background(NNColour.glassLight)
-                        .overlay(Capsule().stroke(NNColour.glassBorder, lineWidth: 1))
-                        .clipShape(Capsule())
+                        .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                        .padding(.bottom, 14)
+
+                    ZStack(alignment: .topLeading) {
+                        if dreamText.isEmpty {
+                            Text("Write what you remember…")
+                                .font(.custom("PlayfairDisplay-Italic", size: 17))
+                                .foregroundColor(NNColour.textPrimary.opacity(0.35))
+                                .padding(.top, 2)
+                                .allowsHitTesting(false)
+                        }
+                        TextEditor(text: $dreamText)
+                            .font(.custom("PlayfairDisplay-Italic", size: 17))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.9))
+                            .scrollContentBackground(.hidden)
+                            .background(Color.clear)
+                            .focused($textFocused)
+                            .lineSpacing(4)
+                    }
+                    .frame(minHeight: 200)
                 }
             }
-            .padding(.bottom, 32)
+            .simultaneousGesture(
+                DragGesture().onChanged { _ in textFocused = false }
+            )
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("From last night")
-                    .font(NNFont.ui(12))
-                    .tracking(2)
-                    .foregroundColor(NNColour.textPrimary.opacity(0.55))
-                Text("What did you dream?")
-                    .font(NNFont.display(46))
-                    .foregroundColor(NNColour.textPrimary)
-                    .lineLimit(2)
-            }
-            .padding(.bottom, 24)
-
-            Text(timeLabel())
-                .font(NNFont.ui(10))
-                .tracking(2)
-                .foregroundColor(NNColour.textPrimary.opacity(0.4))
-                .padding(.bottom, 14)
-
-            ZStack(alignment: .topLeading) {
-                if dreamText.isEmpty {
-                    Text("Write what you remember…")
-                        .font(.custom("PlayfairDisplay-Italic", size: 17))
-                        .foregroundColor(NNColour.textPrimary.opacity(0.35))
-                        .padding(.top, 2)
-                        .allowsHitTesting(false)
-                }
-                TextEditor(text: $dreamText)
-                    .font(.custom("PlayfairDisplay-Italic", size: 17))
-                    .foregroundColor(NNColour.textPrimary.opacity(0.9))
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .focused($textFocused)
-                    .lineSpacing(4)
-            }
-            .frame(maxHeight: .infinity)
-            .onTapGesture { textFocused = true }
-
+            // ── Bottom pinned section ────────────
             VStack(spacing: 16) {
                 Hairline()
 
@@ -155,13 +168,29 @@ struct DreamEntryView: View {
                         .cornerRadius(10)
                 }
             }
-            .padding(.bottom, 40)
         }
         .padding(.horizontal, 26)
         .padding(.top, 56)
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .padding(.bottom, keyboardHeight > 0 ? keyboardHeight : 40)
+        .animation(.easeOut(duration: 0.25), value: keyboardHeight)
         .animation(.easeInOut(duration: 0.2), value: textFocused)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+            if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    keyboardHeight = frame.height
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.easeOut(duration: 0.25)) {
+                keyboardHeight = 0
+            }
+        }
     }
+
+    // ─────────────────────────────────────────
+    // MARK: - Unveiling Content
+    // ─────────────────────────────────────────
 
     private var unveilingContent: some View {
         ZStack {
@@ -181,6 +210,10 @@ struct DreamEntryView: View {
             }
         }
     }
+
+    // ─────────────────────────────────────────
+    // MARK: - Handle Unveil
+    // ─────────────────────────────────────────
 
     private func handleUnveil() async {
         let trimmed = dreamText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -208,6 +241,10 @@ struct DreamEntryView: View {
         activeDream = dream
         triggerUnveil(dream: dream)
     }
+
+    // ─────────────────────────────────────────
+    // MARK: - Trigger Unveil Animation
+    // ─────────────────────────────────────────
 
     private func triggerUnveil(dream: DreamEntry) {
         phase = .unveiling

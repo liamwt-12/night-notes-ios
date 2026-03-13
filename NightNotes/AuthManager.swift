@@ -17,9 +17,17 @@ class AuthManager: ObservableObject {
         isLoading = true
         do {
             let session = try await supabase.auth.session
-            await fetchProfile(userId: session.user.id)
-            isAuthenticated = true
+            let success = await fetchProfile(userId: session.user.id)
+            print("🧪 After fetchProfile — auth.user is: \(String(describing: self.user))")
+            if success && user != nil {
+                isAuthenticated = true
+            } else {
+                print("❌ checkSession: session valid but profile load failed — user stays nil")
+                self.error = "Could not load profile — please sign out and try again"
+                isAuthenticated = false
+            }
         } catch {
+            print("❌ checkSession error (no session): \(error)")
             isAuthenticated = false
         }
         isLoading = false
@@ -39,8 +47,12 @@ class AuthManager: ObservableObject {
             let session = try await supabase.auth.signInWithIdToken(
                 credentials: .init(provider: .apple, idToken: tokenString)
             )
-            await fetchOrCreateProfile(userId: session.user.id, email: session.user.email)
-            isAuthenticated = true
+            let success = await fetchOrCreateProfile(userId: session.user.id, email: session.user.email)
+            if success && user != nil {
+                isAuthenticated = true
+            } else {
+                self.error = "Could not load profile — please sign out and try again"
+            }
         } catch {
             self.error = error.localizedDescription
         }
@@ -51,7 +63,8 @@ class AuthManager: ObservableObject {
     // MARK: - Profile
     // ─────────────────────────────────────────
 
-    func fetchProfile(userId: UUID) async {
+    @discardableResult
+    func fetchProfile(userId: UUID, retried: Bool = false) async -> Bool {
         do {
             let response = try await supabase
                 .from("profiles")
@@ -63,8 +76,17 @@ class AuthManager: ObservableObject {
             let profile = try JSONDecoder.supabase.decode(UserProfile.self, from: response.data)
             user = profile
             print("✅ Profile loaded: \(profile.id), used: \(profile.freeInterpretationsUsed), subscribed: \(profile.subscriptionActive)")
+            return true
         } catch {
             print("❌ fetchProfile error: \(error)")
+
+            // Don't retry more than once to avoid infinite recursion
+            guard !retried else {
+                print("❌ fetchProfile already retried — giving up")
+                self.error = "Could not load profile — please sign out and try again"
+                return false
+            }
+
             // Profile missing — create a minimal one so the app can function
             let newProfile = NewProfile(
                 id: userId,
@@ -77,14 +99,19 @@ class AuthManager: ObservableObject {
                     .from("profiles")
                     .upsert(newProfile)
                     .execute()
-                await fetchProfile(userId: userId)
+                print("✅ Profile upserted, retrying fetch...")
+                return await fetchProfile(userId: userId, retried: true)
             } catch {
-                print("❌ Profile upsert error: \(error)")
+                print("❌ Profile upsert failed — full error object: \(error)")
+                print("❌ Profile upsert failed — localizedDescription: \(error.localizedDescription)")
+                self.error = "Could not load profile — please sign out and try again"
+                return false
             }
         }
     }
 
-    private func fetchOrCreateProfile(userId: UUID, email: String?) async {
+    @discardableResult
+    private func fetchOrCreateProfile(userId: UUID, email: String?) async -> Bool {
         do {
             let response = try await supabase
                 .from("profiles")
@@ -96,6 +123,7 @@ class AuthManager: ObservableObject {
             let profile = try JSONDecoder.supabase.decode(UserProfile.self, from: response.data)
             user = profile
             print("✅ Profile loaded: \(profile.id), used: \(profile.freeInterpretationsUsed), subscribed: \(profile.subscriptionActive)")
+            return true
         } catch {
             print("❌ fetchOrCreateProfile error: \(error)")
             // Profile doesn't exist — create it
@@ -110,9 +138,13 @@ class AuthManager: ObservableObject {
                     .from("profiles")
                     .insert(newProfile)
                     .execute()
-                await fetchProfile(userId: userId)
+                print("✅ Profile inserted, retrying fetch...")
+                return await fetchProfile(userId: userId, retried: true)
             } catch {
-                print("❌ Profile create error: \(error)")
+                print("❌ Profile create failed — full error object: \(error)")
+                print("❌ Profile create failed — localizedDescription: \(error.localizedDescription)")
+                self.error = "Could not load profile — please sign out and try again"
+                return false
             }
         }
     }
@@ -163,12 +195,15 @@ class AuthManager: ObservableObject {
         try? await supabase.auth.signOut()
         isAuthenticated = false
         user = nil
+        error = nil
     }
 }
 
 // ─────────────────────────────────────────
 // MARK: - Helper struct for profile creation
 // ─────────────────────────────────────────
+// CodingKeys verified: subscription_active and free_interpretations_used
+// match the exact Supabase column names in the profiles table.
 
 private struct NewProfile: Codable {
     let id: UUID

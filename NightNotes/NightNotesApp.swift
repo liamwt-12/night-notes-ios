@@ -39,6 +39,13 @@ struct RootView: View {
                             .font(NNFont.ui(11))
                             .tracking(6)
                             .foregroundColor(NNColour.textMuted)
+                        if let err = auth.error {
+                            Text(err)
+                                .font(NNFont.ui(10))
+                                .foregroundColor(.red.opacity(0.8))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                        }
                         Spacer()
                     }
                 }
