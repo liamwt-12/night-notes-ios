@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthenticationServices
+import UserNotifications
 
 struct OnboardingView: View {
     @EnvironmentObject var auth: AuthManager
@@ -11,18 +12,29 @@ struct OnboardingView: View {
             AuroraView()
             switch step {
             case .hero:
-                HeroScreen(onContinue: { step = .dreamerType }).transition(.opacity)
+                HeroScreen(onContinue: { step = .dreamerType })
+                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
             case .dreamerType:
-                DreamerTypeScreen(selectedType: $selectedType, onContinue: { step = .transition }).transition(.opacity)
+                DreamerTypeScreen(selectedType: $selectedType, onContinue: { step = .notificationPicker })
+                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
+            case .notificationPicker:
+                NotificationPickerScreen(onContinue: { step = .transition })
+                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
             case .transition:
-                TransitionScreen(onContinue: { step = .signIn }).transition(.opacity)
+                TransitionScreen(onContinue: { step = .signIn })
+                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
             case .signIn:
-                SignInScreen(selectedType: selectedType).transition(.opacity)
+                SignInScreen(selectedType: selectedType)
+                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
             }
         }
         .animation(.easeInOut(duration: 0.5), value: step)
     }
 }
+
+// ─────────────────────────────────────────
+// MARK: - Hero Screen
+// ─────────────────────────────────────────
 
 struct HeroScreen: View {
     let onContinue: () -> Void
@@ -47,22 +59,22 @@ struct HeroScreen: View {
 
             VStack(alignment: .leading, spacing: 16) {
                 Text("Dreams fade quickly.")
-                    .font(NNFont.display(54))
+                    .font(NNFont.display(44))
                     .foregroundColor(NNColour.textPrimary)
                     .lineLimit(2)
 
                 Text("Write them down before they disappear.")
-                    .font(.custom("PlayfairDisplay-Italic", size: 18))
-                    .foregroundColor(NNColour.textPrimary.opacity(0.6))
+                    .font(NNFont.body(14))
+                    .foregroundColor(NNColour.textPrimary.opacity(0.7))
                     .lineSpacing(4)
             }
 
             Spacer().frame(height: 52)
 
             Button(action: onContinue) {
-                Text("Get started")
-                    .font(NNFont.ui(15))
-                    .tracking(2)
+                Text("GET STARTED")
+                    .font(NNFont.ui(11))
+                    .tracking(4)
                     .foregroundColor(NNColour.textPrimary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 20)
@@ -80,6 +92,10 @@ struct HeroScreen: View {
     }
 }
 
+// ─────────────────────────────────────────
+// MARK: - Dreamer Type Screen
+// ─────────────────────────────────────────
+
 struct DreamerTypeScreen: View {
     @Binding var selectedType: DreamerType?
     let onContinue: () -> Void
@@ -96,7 +112,7 @@ struct DreamerTypeScreen: View {
 
             VStack(alignment: .leading, spacing: 20) {
                 Text("How do you\ndream?")
-                    .font(NNFont.display(52))
+                    .font(NNFont.display(44))
                     .foregroundColor(NNColour.textPrimary)
                     .lineSpacing(-2)
 
@@ -112,9 +128,9 @@ struct DreamerTypeScreen: View {
             Spacer().frame(height: 40)
 
             Button(action: { if selectedType != nil { onContinue() } }) {
-                Text("Continue")
-                    .font(NNFont.ui(15))
-                    .tracking(2)
+                Text("CONTINUE")
+                    .font(NNFont.ui(11))
+                    .tracking(4)
                     .foregroundColor(selectedType != nil ? NNColour.textPrimary : NNColour.textPrimary.opacity(0.3))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 20)
@@ -155,6 +171,7 @@ struct DreamerTypeRow: View {
                 Text(type.extendedLabel)
                     .font(.custom("PlayfairDisplay-Italic", size: 19))
                     .foregroundColor(isSelected ? NNColour.textPrimary : NNColour.textPrimary.opacity(0.5))
+                    .kerning(0.3)
 
                 Spacer()
             }
@@ -162,6 +179,158 @@ struct DreamerTypeRow: View {
         }
     }
 }
+
+// ─────────────────────────────────────────
+// MARK: - Notification Time Picker
+// ─────────────────────────────────────────
+
+struct NotificationPickerScreen: View {
+    let onContinue: () -> Void
+    @State private var appeared = false
+    @State private var wakeTime = Calendar.current.date(from: DateComponents(hour: 8, minute: 0)) ?? Date()
+    @State private var permissionDenied = false
+    @AppStorage("reminderHour") private var reminderHour = 8
+    @AppStorage("reminderMinute") private var reminderMinute = 0
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            Text("When do you wake?")
+                .font(NNFont.display(44))
+                .foregroundColor(NNColour.textPrimary)
+                .multilineTextAlignment(.center)
+                .padding(.bottom, 12)
+
+            Text("We'll ask about your dreams at the right moment.")
+                .font(NNFont.body(14))
+                .foregroundColor(NNColour.textPrimary.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+                .padding(.bottom, 36)
+
+            // Time picker in frosted glass card
+            DatePicker("", selection: $wakeTime, displayedComponents: .hourAndMinute)
+                .datePickerStyle(.wheel)
+                .labelsHidden()
+                .colorScheme(.dark)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
+                .cornerRadius(20)
+                .padding(.horizontal, 40)
+                .padding(.bottom, 36)
+
+            Button(action: { scheduleAndContinue() }) {
+                Text("SET MY REMINDER")
+                    .font(NNFont.ui(11))
+                    .tracking(4)
+                    .foregroundColor(NNColour.textPrimary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+                    .background(NNColour.glassLight)
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(NNColour.glassBorder, lineWidth: 1))
+                    .cornerRadius(14)
+            }
+            .padding(.horizontal, 28)
+
+            Text("You can change this in Settings")
+                .font(NNFont.ui(10))
+                .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                .padding(.top, 12)
+
+            if permissionDenied {
+                Text("Enable in Settings → Notifications")
+                    .font(NNFont.ui(10))
+                    .foregroundColor(NNColour.orbAmber.opacity(0.8))
+                    .padding(.top, 8)
+                    .transition(.opacity)
+            }
+
+            Spacer()
+
+            // Skip option
+            Button(action: onContinue) {
+                Text("Skip")
+                    .font(NNFont.ui(11))
+                    .tracking(2)
+                    .foregroundColor(NNColour.textPrimary.opacity(0.4))
+            }
+            .padding(.bottom, 52)
+        }
+        .padding(.horizontal, 28)
+        .opacity(appeared ? 1 : 0)
+        .onAppear { withAnimation(.easeOut(duration: 0.6)) { appeared = true } }
+    }
+
+    private func scheduleAndContinue() {
+        let components = Calendar.current.dateComponents([.hour, .minute], from: wakeTime)
+        let hour = components.hour ?? 8
+        let minute = components.minute ?? 0
+        reminderHour = hour
+        reminderMinute = minute
+
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            DispatchQueue.main.async {
+                if granted {
+                    UserDefaults.standard.set(true, forKey: "morningReminderEnabled")
+                    scheduleNotification(hour: hour, minute: minute)
+                    onContinue()
+                } else {
+                    permissionDenied = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        onContinue()
+                    }
+                }
+            }
+        }
+    }
+
+    private func scheduleNotification(hour: Int, minute: Int) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["nn.morning.reminder"])
+
+        let titles = [
+            "What happened last night?",
+            "Your mind was busy while you slept.",
+            "Dreams fade in minutes.",
+            "Something was there. What was it?",
+            "Catch it before it disappears.",
+            "Last night is still with you.",
+            "The other half of your day."
+        ]
+
+        // Schedule 7 notifications, one for each day of the week
+        for dayOffset in 0..<7 {
+            let content = UNMutableNotificationContent()
+            content.title = titles[dayOffset]
+            content.body = "Open Night Notes before it fades."
+            content.sound = .default
+
+            var dateComponents = DateComponents()
+            dateComponents.hour = hour
+            dateComponents.minute = minute
+            dateComponents.weekday = dayOffset + 1 // 1=Sunday, 7=Saturday
+
+            let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+            let request = UNNotificationRequest(
+                identifier: "nn.morning.reminder.\(dayOffset)",
+                content: content,
+                trigger: trigger
+            )
+            center.add(request)
+        }
+    }
+}
+
+// ─────────────────────────────────────────
+// MARK: - Transition Screen
+// ─────────────────────────────────────────
 
 struct TransitionScreen: View {
     let onContinue: () -> Void
@@ -182,16 +351,16 @@ struct TransitionScreen: View {
             Spacer().frame(height: 16)
 
             Text("No judgement. Just a place to look.")
-                .font(.custom("PlayfairDisplay-Italic", size: 16))
-                .foregroundColor(NNColour.textPrimary.opacity(0.55))
+                .font(NNFont.body(14))
+                .foregroundColor(NNColour.textPrimary.opacity(0.7))
                 .multilineTextAlignment(.center)
 
             Spacer()
 
             Button(action: onContinue) {
-                Text("I'm ready")
-                    .font(NNFont.ui(15))
-                    .tracking(2)
+                Text("I'M READY")
+                    .font(NNFont.ui(11))
+                    .tracking(4)
                     .foregroundColor(NNColour.textPrimary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 20)
@@ -206,6 +375,10 @@ struct TransitionScreen: View {
         .onAppear { withAnimation(.easeOut(duration: 0.8)) { appeared = true } }
     }
 }
+
+// ─────────────────────────────────────────
+// MARK: - Sign In Screen
+// ─────────────────────────────────────────
 
 struct SignInScreen: View {
     let selectedType: DreamerType?
@@ -223,8 +396,8 @@ struct SignInScreen: View {
             Spacer().frame(height: 12)
 
             Text("Your dreams are saved privately\nacross all your devices.")
-                .font(.custom("PlayfairDisplay-Italic", size: 16))
-                .foregroundColor(NNColour.textPrimary.opacity(0.55))
+                .font(NNFont.body(14))
+                .foregroundColor(NNColour.textPrimary.opacity(0.7))
                 .lineSpacing(4)
 
             Spacer()

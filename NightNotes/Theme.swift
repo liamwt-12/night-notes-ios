@@ -38,6 +38,10 @@ struct NNFont {
     static func display(_ size: CGFloat) -> Font {
         .custom("PlayfairDisplay-BlackItalic", size: size)
     }
+    // Playfair Display Bold Italic — secondary display
+    static func displayBold(_ size: CGFloat) -> Font {
+        .custom("PlayfairDisplay-BoldItalic", size: size)
+    }
     // DM Sans 200 — labels, UI chrome
     static func ui(_ size: CGFloat, weight: Font.Weight = .ultraLight) -> Font {
         .custom("DMSans-Regular", size: size).weight(weight)

@@ -32,6 +32,7 @@ struct MainTabView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: activeTab)
+            .transition(.opacity.combined(with: .scale(scale: 0.97)))
 
             // Tab bar
             NNTabBar(activeTab: $activeTab)

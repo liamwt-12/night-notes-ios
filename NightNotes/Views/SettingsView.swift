@@ -6,6 +6,8 @@ struct SettingsView: View {
     @EnvironmentObject var purchase: PurchaseManager
     @State private var showDreamerTypePicker = false
     @State private var morningReminderEnabled = UserDefaults.standard.bool(forKey: "morningReminderEnabled")
+    @AppStorage("reminderHour") private var reminderHour = 8
+    @AppStorage("reminderMinute") private var reminderMinute = 0
 
     var body: some View {
         ZStack {
@@ -145,23 +147,48 @@ struct SettingsView: View {
                 morningReminderEnabled = true
                 UserDefaults.standard.set(true, forKey: "morningReminderEnabled")
 
-                let content = UNMutableNotificationContent()
-                content.title = "night notes"
-                content.body = "What did you dream last night?"
-                content.sound = .default
+                // Use stored reminder time from onboarding
+                let titles = [
+                    "What happened last night?",
+                    "Your mind was busy while you slept.",
+                    "Dreams fade in minutes.",
+                    "Something was there. What was it?",
+                    "Catch it before it disappears.",
+                    "Last night is still with you.",
+                    "The other half of your day."
+                ]
 
-                var dateComponents = DateComponents()
-                dateComponents.hour = 8
-                dateComponents.minute = 0
-                let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-                let request = UNNotificationRequest(identifier: "morningReminder", content: content, trigger: trigger)
-                center.add(request)
+                // Remove old notifications
+                center.removePendingNotificationRequests(withIdentifiers:
+                    (0..<7).map { "nn.morning.reminder.\($0)" } + ["morningReminder"]
+                )
+
+                for dayOffset in 0..<7 {
+                    let content = UNMutableNotificationContent()
+                    content.title = titles[dayOffset]
+                    content.body = "Open Night Notes before it fades."
+                    content.sound = .default
+
+                    var dateComponents = DateComponents()
+                    dateComponents.hour = reminderHour
+                    dateComponents.minute = reminderMinute
+                    dateComponents.weekday = dayOffset + 1
+
+                    let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+                    let request = UNNotificationRequest(
+                        identifier: "nn.morning.reminder.\(dayOffset)",
+                        content: content,
+                        trigger: trigger
+                    )
+                    center.add(request)
+                }
             }
         }
     }
 
     private func cancelMorningReminder() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["morningReminder"])
+        let ids = (0..<7).map { "nn.morning.reminder.\($0)" } + ["morningReminder"]
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
     }
 }
 

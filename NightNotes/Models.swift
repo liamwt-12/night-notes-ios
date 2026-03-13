@@ -109,6 +109,7 @@ struct UserProfile: Codable, Identifiable {
 enum OnboardingStep {
     case hero
     case dreamerType
+    case notificationPicker
     case transition
     case signIn
 }

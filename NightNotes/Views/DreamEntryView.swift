@@ -14,6 +14,7 @@ struct DreamEntryView: View {
 
     @State private var auroraHueShift: Double  = 0
     @State private var auroraScale:    Double  = 1.0
+    @State private var auroraBrightness: Double = 0
     @State private var orbScale:   CGFloat = 0.05
     @State private var orbOpacity: Double  = 0
     @State private var lineVisible = [false, false, false, false, false]
@@ -21,26 +22,30 @@ struct DreamEntryView: View {
     @State private var showPaywall = false
     @State private var errorMessage: String?
     @State private var keyboardHeight: CGFloat = 0
+    @State private var unveilFilling = false
 
     var body: some View {
         ZStack {
             AuroraView(hueShift: auroraHueShift, scaleBoost: auroraScale)
+                .brightness(auroraBrightness)
 
             switch phase {
             case .entry:
-                entryContent.transition(.opacity)
+                entryContent
+                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
             case .unveiling:
-                unveilingContent.transition(.opacity)
+                unveilingContent
+                    .transition(.opacity)
             case .reading:
                 if let dream = activeDream, let interp = dream.interpretation {
                     ReflectionView(dream: dream, interpretation: interp, lineVisible: lineVisible) {
                         resetToEntry()
                     }
-                    .transition(.opacity)
+                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
                 }
             }
         }
-        .animation(.easeInOut(duration: 0.4), value: phase)
+        .animation(.easeInOut(duration: 0.5), value: phase)
         .sheet(isPresented: $showPaywall) { PurchaseView() }
     }
 
@@ -50,7 +55,6 @@ struct DreamEntryView: View {
 
     private var entryContent: some View {
         VStack(spacing: 0) {
-            // ── Scrollable upper content ─────────
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
@@ -74,13 +78,14 @@ struct DreamEntryView: View {
                     .padding(.bottom, 32)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("From last night")
-                            .font(NNFont.ui(12))
-                            .tracking(2)
-                            .foregroundColor(NNColour.textPrimary.opacity(0.55))
+                        Text("FROM LAST NIGHT")
+                            .font(NNFont.ui(9))
+                            .tracking(5)
+                            .foregroundColor(NNColour.textPrimary.opacity(0.35))
                         Text("What did you dream?")
-                            .font(NNFont.display(46))
+                            .font(NNFont.display(52))
                             .foregroundColor(NNColour.textPrimary)
+                            .lineSpacing(-2)
                             .lineLimit(2)
                     }
                     .padding(.bottom, 24)
@@ -94,18 +99,20 @@ struct DreamEntryView: View {
                     ZStack(alignment: .topLeading) {
                         if dreamText.isEmpty {
                             Text("Write what you remember…")
-                                .font(.custom("PlayfairDisplay-Italic", size: 17))
+                                .font(.custom("PlayfairDisplay-Italic", size: 18))
                                 .foregroundColor(NNColour.textPrimary.opacity(0.35))
+                                .kerning(0.3)
                                 .padding(.top, 2)
                                 .allowsHitTesting(false)
                         }
                         TextEditor(text: $dreamText)
-                            .font(.custom("PlayfairDisplay-Italic", size: 17))
+                            .font(.custom("PlayfairDisplay-Italic", size: 18))
                             .foregroundColor(NNColour.textPrimary.opacity(0.9))
                             .scrollContentBackground(.hidden)
                             .background(Color.clear)
                             .focused($textFocused)
                             .lineSpacing(4)
+                            .kerning(0.3)
                     }
                     .frame(minHeight: 200)
                 }
@@ -114,11 +121,10 @@ struct DreamEntryView: View {
                 DragGesture().onChanged { _ in textFocused = false }
             )
 
-            // ── Bottom pinned section ────────────
-            VStack(spacing: 16) {
-                Hairline()
-
+            // Bottom pinned section
+            VStack(spacing: 12) {
                 if textFocused {
+                    Hairline()
                     Button(action: { textFocused = false }) {
                         Text("Done")
                             .font(NNFont.ui(11))
@@ -130,27 +136,46 @@ struct DreamEntryView: View {
                     .transition(.opacity)
                 }
 
-                Button(action: { Task { await handleUnveil() } }) {
-                    Text("Look closer")
-                        .font(.custom("PlayfairDisplay-Italic", size: 20))
-                        .foregroundColor(
-                            dreamText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                ? NNColour.textPrimary.opacity(0.3)
-                                : NNColour.textPrimary
-                        )
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 22)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(
-                                    dreamText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                        ? NNColour.glassBorder
-                                        : Color.white.opacity(0.15),
-                                    lineWidth: 1
-                                )
-                        )
+                // Unveil button
+                let isEmpty = dreamText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                Button(action: {
+                    guard !isEmpty else { return }
+                    unveilFilling = true
+                    Task {
+                        try? await Task.sleep(nanoseconds: 300_000_000)
+                        await handleUnveil()
+                    }
+                }) {
+                    VStack(spacing: 12) {
+                        ZStack {
+                            // Outline version
+                            Text("Unveil")
+                                .font(NNFont.displayBold(52))
+                                .foregroundColor(.clear)
+                                .shadow(color: .white.opacity(0.6), radius: 0, x: 1, y: 0)
+                                .shadow(color: .white.opacity(0.6), radius: 0, x: -1, y: 0)
+                                .shadow(color: .white.opacity(0.6), radius: 0, x: 0, y: 1)
+                                .shadow(color: .white.opacity(0.6), radius: 0, x: 0, y: -1)
+                                .opacity(unveilFilling ? 0 : 1)
+
+                            // Fill version
+                            Text("Unveil")
+                                .font(NNFont.displayBold(52))
+                                .foregroundColor(.white)
+                                .opacity(unveilFilling ? 1 : 0)
+                        }
+                        .animation(.easeInOut(duration: 0.3), value: unveilFilling)
+
+                        Text("TAP TO UNVEIL")
+                            .font(NNFont.ui(9))
+                            .tracking(6)
+                            .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, textFocused ? 8 : 24)
                 }
-                .disabled(dreamText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(isEmpty)
+                .opacity(isEmpty ? 0.3 : 1)
 
                 if let err = errorMessage {
                     Text(err)
@@ -206,6 +231,7 @@ struct DreamEntryView: View {
                 Text("Thinking about it…")
                     .font(.custom("PlayfairDisplay-Italic", size: 18))
                     .foregroundColor(NNColour.textPrimary.opacity(0.6))
+                    .kerning(0.3)
                     .padding(.bottom, 80)
             }
         }
@@ -220,18 +246,18 @@ struct DreamEntryView: View {
         guard !trimmed.isEmpty else { return }
         if let user = auth.user, !user.canInterpret {
             showPaywall = true
+            unveilFilling = false
             return
         }
         textFocused = false
         errorMessage = nil
         guard let userId = auth.user?.id else {
-            // Try to recover session before giving up
             await auth.checkSession()
             guard let userId = auth.user?.id else {
                 errorMessage = "Session expired — please sign out and back in"
+                unveilFilling = false
                 return
             }
-            // Continue with recovered userId
             let dream = DreamEntry(userId: userId, rawText: trimmed, dreamerType: auth.user?.dreamerType ?? .fragments)
             activeDream = dream
             triggerUnveil(dream: dream)
@@ -248,9 +274,19 @@ struct DreamEntryView: View {
 
     private func triggerUnveil(dream: DreamEntry) {
         phase = .unveiling
+        // Aurora brightens slightly
+        withAnimation(.easeInOut(duration: 0.4)) {
+            auroraBrightness = 0.08
+        }
         withAnimation(.easeInOut(duration: 0.7)) {
             auroraHueShift = 35
             auroraScale    = 0.94
+        }
+        // Dim back after brightening
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            withAnimation(.easeInOut(duration: 0.5)) {
+                auroraBrightness = 0
+            }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             withAnimation(.spring(response: 0.9, dampingFraction: 0.7)) {
@@ -290,8 +326,10 @@ struct DreamEntryView: View {
                         phase = .entry
                         auroraHueShift = 0
                         auroraScale    = 1.0
+                        auroraBrightness = 0
                         orbScale       = 0.05
                         orbOpacity     = 0
+                        unveilFilling  = false
                     }
                 }
             }
@@ -305,7 +343,9 @@ struct DreamEntryView: View {
         orbOpacity     = 0
         auroraHueShift = 0
         auroraScale    = 1.0
+        auroraBrightness = 0
         activeDream    = nil
+        unveilFilling  = false
         phase          = .entry
     }
 

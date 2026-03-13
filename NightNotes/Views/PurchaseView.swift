@@ -37,6 +37,7 @@ struct PurchaseView: View {
                     .font(.custom("PlayfairDisplay-Italic", size: 17))
                     .foregroundColor(NNColour.textPrimary.opacity(0.6))
                     .lineSpacing(4)
+                    .kerning(0.3)
                     .padding(.bottom, 40)
 
                 VStack(alignment: .leading, spacing: 14) {
@@ -77,7 +78,7 @@ struct PurchaseView: View {
 
         if hasProducts {
             VStack(spacing: 12) {
-                // ── Annual (recommended) ──────────────
+                // Annual (recommended)
                 if let yearly = purchase.yearlyProduct {
                     Button(action: { Task { await purchase.purchaseYearly() } }) {
                         VStack(spacing: 10) {
@@ -121,14 +122,27 @@ struct PurchaseView: View {
                     .disabled(purchase.isPurchasing)
                 }
 
-                // ── Monthly ──────────────────────────
+                // Monthly with introductory offer support
                 if let monthly = purchase.monthlyProduct {
                     Button(action: { Task { await purchase.purchaseMonthly() } }) {
                         HStack {
-                            Text(monthly.displayPrice + " / month")
-                                .font(NNFont.ui(12))
-                                .tracking(2)
-                                .foregroundColor(NNColour.textPrimary.opacity(0.5))
+                            VStack(alignment: .leading, spacing: 2) {
+                                if let intro = monthly.subscription?.introductoryOffer {
+                                    Text("Start for \(intro.displayPrice)")
+                                        .font(NNFont.ui(13))
+                                        .tracking(2)
+                                        .foregroundColor(NNColour.textPrimary.opacity(0.7))
+                                    Text("then \(monthly.displayPrice)/month")
+                                        .font(NNFont.ui(10))
+                                        .tracking(1)
+                                        .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                                } else {
+                                    Text(monthly.displayPrice + " / month")
+                                        .font(NNFont.ui(12))
+                                        .tracking(2)
+                                        .foregroundColor(NNColour.textPrimary.opacity(0.5))
+                                }
+                            }
                             Spacer()
                             if purchase.isPurchasing {
                                 ProgressView()
@@ -170,6 +184,7 @@ struct PerkRow: View {
             Text(text)
                 .font(.custom("PlayfairDisplay-Italic", size: 16))
                 .foregroundColor(NNColour.textPrimary.opacity(0.7))
+                .kerning(0.3)
         }
     }
 }

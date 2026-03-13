@@ -34,7 +34,7 @@ At the end, extract 3–6 recurring symbols or themes as a JSON array of short s
 
 const headers = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
   "Content-Type": "application/json",
 };
 
@@ -90,8 +90,11 @@ export async function handler(event: any) {
       return { statusCode: 403, headers, body: JSON.stringify({ error: "No interpretations remaining" }) };
     }
 
-    // ── Call Claude ───────────────────────
-    const message = await anthropic.messages.create({
+    // ── Check if client wants streaming (SSE) ──
+    const wantsStream = event.headers.accept?.includes("text/event-stream");
+
+    // ── Call Claude with streaming ───────
+    const stream = anthropic.messages.stream({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
       system: buildSystemPrompt(dreamerNote),
@@ -103,10 +106,18 @@ export async function handler(event: any) {
       ],
     });
 
-    const raw = message.content[0].type === "text" ? message.content[0].text : "";
+    let fullText = "";
+    const tokens: string[] = [];
+
+    stream.on("text", (text) => {
+      fullText += text;
+      tokens.push(text);
+    });
+
+    await stream.finalMessage();
 
     // ── Parse symbols from response ───────
-    const symbolsMatch = raw.match(/SYMBOLS:\s*(\[.*?\])/s);
+    const symbolsMatch = fullText.match(/SYMBOLS:\s*(\[.*?\])/s);
     let symbols: string[] = [];
     if (symbolsMatch) {
       try {
@@ -117,7 +128,7 @@ export async function handler(event: any) {
     }
 
     // Clean interpretation — strip the SYMBOLS line
-    const interpretation = raw.replace(/SYMBOLS:.*$/s, "").trim();
+    const interpretation = fullText.replace(/SYMBOLS:.*$/s, "").trim();
 
     // ── Save to Supabase ──────────────────
     const { data: saved } = await supabase
@@ -140,7 +151,26 @@ export async function handler(event: any) {
         .eq("id", user.id);
     }
 
-    // ── Return ────────────────────────────
+    // ── Return SSE or JSON based on Accept header ──
+    if (wantsStream) {
+      let sseBody = "";
+      for (const token of tokens) {
+        sseBody += `data: ${JSON.stringify({ type: "token", text: token })}\n\n`;
+      }
+      sseBody += `data: ${JSON.stringify({ type: "done", symbols, dreamId: saved?.id ?? null })}\n\n`;
+
+      return {
+        statusCode: 200,
+        headers: {
+          ...headers,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+        },
+        body: sseBody,
+      };
+    }
+
+    // ── Standard JSON response ────────────
     return {
       statusCode: 200,
       headers,
