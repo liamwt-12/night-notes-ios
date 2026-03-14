@@ -35,59 +35,85 @@ struct AuroraCanvas: View {
             ZStack {
                 NNColour.void
 
-                // Blob 1 — Rose, upper left, large (5s breathing cycle)
+                // Blob 1 — Rose, upper left (8s breathing cycle)
                 RadialBlob(
                     color: Color(red: 0.647, green: 0.216, blue: 0.529),
-                    centerX: 0.22 + 0.06 * sin(t * 0.11),
-                    centerY: 0.28 + 0.05 * cos(t * 0.11),
-                    radiusX: w * 1.0 + 15 * CGFloat(sin(t * .pi * 2 / 5.0)),
-                    radiusY: h * 0.70 + 15 * CGFloat(cos(t * .pi * 2 / 5.5)),
+                    centerX: 0.22 + 0.06 * sin(t * 0.096),
+                    centerY: 0.28 + 0.05 * cos(t * 0.096),
+                    radiusX: w * 1.0 + 15 * CGFloat(sin(t * .pi * 2 / 8.0)),
+                    radiusY: h * 0.70 + 15 * CGFloat(cos(t * .pi * 2 / 8.5)),
                     opacity: 0.95
                 )
 
-                // Blob 2 — Indigo, upper right, large (4.5s cycle)
+                // Blob 2 — Indigo, upper right (9s cycle)
                 RadialBlob(
                     color: Color(red: 0.333, green: 0.188, blue: 0.765),
-                    centerX: 0.78 + 0.05 * cos(t * 0.17),
-                    centerY: 0.22 + 0.06 * sin(t * 0.17),
-                    radiusX: w * 0.95 + 15 * CGFloat(sin(t * .pi * 2 / 4.5)),
-                    radiusY: h * 0.68 + 15 * CGFloat(cos(t * .pi * 2 / 5.0)),
+                    centerX: 0.78 + 0.05 * cos(t * 0.148),
+                    centerY: 0.22 + 0.06 * sin(t * 0.148),
+                    radiusX: w * 0.95 + 15 * CGFloat(sin(t * .pi * 2 / 9.0)),
+                    radiusY: h * 0.68 + 15 * CGFloat(cos(t * .pi * 2 / 8.0)),
                     opacity: 0.90
                 )
 
-                // Blob 3 — Rose lower, fills bottom half (5.5s cycle)
+                // Blob 3 — Rose lower (8.5s cycle)
                 RadialBlob(
                     color: Color(red: 0.500, green: 0.150, blue: 0.420),
-                    centerX: 0.35 + 0.04 * sin(t * 0.09),
-                    centerY: 0.72 + 0.04 * cos(t * 0.09),
-                    radiusX: w * 0.90 + 15 * CGFloat(sin(t * .pi * 2 / 5.5)),
-                    radiusY: h * 0.55 + 15 * CGFloat(cos(t * .pi * 2 / 4.8)),
+                    centerX: 0.35 + 0.04 * sin(t * 0.078),
+                    centerY: 0.72 + 0.04 * cos(t * 0.078),
+                    radiusX: w * 0.90 + 15 * CGFloat(sin(t * .pi * 2 / 8.5)),
+                    radiusY: h * 0.55 + 15 * CGFloat(cos(t * .pi * 2 / 9.0)),
                     opacity: 0.70
                 )
 
-                // Blob 4 — Indigo lower right (6s cycle)
+                // Blob 4 — Indigo lower right (9.5s cycle)
                 RadialBlob(
                     color: Color(red: 0.250, green: 0.140, blue: 0.600),
-                    centerX: 0.80 + 0.04 * cos(t * 0.13),
-                    centerY: 0.68 + 0.04 * sin(t * 0.13),
-                    radiusX: w * 0.80 + 15 * CGFloat(sin(t * .pi * 2 / 6.0)),
-                    radiusY: h * 0.50 + 15 * CGFloat(cos(t * .pi * 2 / 5.2)),
+                    centerX: 0.80 + 0.04 * cos(t * 0.113),
+                    centerY: 0.68 + 0.04 * sin(t * 0.113),
+                    radiusX: w * 0.80 + 15 * CGFloat(sin(t * .pi * 2 / 9.5)),
+                    radiusY: h * 0.50 + 15 * CGFloat(cos(t * .pi * 2 / 8.0)),
                     opacity: 0.65
                 )
 
-                // Blob 5 — Ember, top right accent (4s cycle)
+                // Blob 5 — Ember, top right accent (8s cycle)
                 RadialBlob(
                     color: Color(red: 0.843, green: 0.314, blue: 0.188),
-                    centerX: 0.88 + 0.04 * sin(t * 0.23),
-                    centerY: 0.08 + 0.04 * cos(t * 0.23),
-                    radiusX: w * 0.55 + 15 * CGFloat(sin(t * .pi * 2 / 4.0)),
-                    radiusY: h * 0.38 + 15 * CGFloat(cos(t * .pi * 2 / 4.3)),
+                    centerX: 0.88 + 0.04 * sin(t * 0.200),
+                    centerY: 0.08 + 0.04 * cos(t * 0.200),
+                    radiusX: w * 0.55 + 15 * CGFloat(sin(t * .pi * 2 / 8.0)),
+                    radiusY: h * 0.38 + 15 * CGFloat(cos(t * .pi * 2 / 8.5)),
                     opacity: 0.45
                 )
             }
             .frame(width: w, height: h)
             .drawingGroup()
-            .overlay(GrainOverlay())
+            // Additional bloom layers
+            .overlay(
+                ZStack {
+                    // Rose/pink tight bloom — bottom-left, 28s drift
+                    Circle()
+                        .fill(Color(red: 0.85, green: 0.35, blue: 0.55))
+                        .frame(width: 120, height: 120)
+                        .blur(radius: 80)
+                        .opacity(0.15)
+                        .position(
+                            x: w * 0.18 + 30 * CGFloat(sin(t * .pi * 2 / 28)),
+                            y: h * 0.78 + 20 * CGFloat(cos(t * .pi * 2 / 28))
+                        )
+                    // Deep violet diffuse bloom — centred high, 20s breathe
+                    Circle()
+                        .fill(Color(red: 0.25, green: 0.10, blue: 0.45))
+                        .frame(width: 500, height: 500)
+                        .blur(radius: 100)
+                        .opacity(0.13 + 0.05 * sin(t * .pi * 2 / 20))
+                        .position(x: w * 0.5, y: h * 0.35)
+                }
+                .allowsHitTesting(false)
+            )
+            // Film grain
+            .overlay(FilmGrainCanvas())
+            // Vignette
+            .overlay(VignetteOverlay())
         }
         .ignoresSafeArea()
     }
@@ -111,7 +137,7 @@ struct RadialBlob: View {
             let h = geo.size.height
             let cx = w * centerX
             let cy = h * centerY
-            let r = max(radiusX, radiusY) * 0.65
+            let r = max(radiusX, radiusY) * 0.75
 
             RadialGradient(
                 gradient: Gradient(stops: [
@@ -152,7 +178,7 @@ struct GlowOrb: View {
             .scaleEffect(pulse ? 1.14 : 1.0)
             .animation(
                 animate
-                    ? .easeInOut(duration: 4.5).repeatForever(autoreverses: true)
+                    ? .easeInOut(duration: 5.4).repeatForever(autoreverses: true)
                     : .default,
                 value: pulse
             )
@@ -161,39 +187,72 @@ struct GlowOrb: View {
 }
 
 // ─────────────────────────────────────────
-// MARK: - Grain Overlay
+// MARK: - Film Grain (Canvas)
 // ─────────────────────────────────────────
 
-struct GrainOverlay: View {
-    var body: some View {
-        Rectangle()
-            .fill(
-                ImagePaint(
-                    image: Image(uiImage: Self.grainImage),
-                    scale: 0.5
-                )
-            )
-            .opacity(0.045)
-            .blendMode(.overlay)
-            .allowsHitTesting(false)
-            .ignoresSafeArea()
+struct FilmGrainCanvas: View {
+    private struct GrainPoint {
+        let x: CGFloat
+        let y: CGFloat
+        let radius: CGFloat
+        let opacity: Double
     }
 
-    private static let grainImage: UIImage = {
-        let size = CGSize(width: 200, height: 200)
-        UIGraphicsBeginImageContext(size)
-        let ctx = UIGraphicsGetCurrentContext()!
-        for _ in 0..<18000 {
-            let x = CGFloat.random(in: 0..<size.width)
-            let y = CGFloat.random(in: 0..<size.height)
-            let alpha = CGFloat.random(in: 0.08...0.55)
-            ctx.setFillColor(UIColor(white: 1, alpha: alpha).cgColor)
-            ctx.fill(CGRect(x: x, y: y, width: 1, height: 1))
+    @State private var points: [GrainPoint] = []
+
+    var body: some View {
+        Canvas { context, size in
+            for p in points {
+                let rect = CGRect(
+                    x: p.x * size.width - p.radius,
+                    y: p.y * size.height - p.radius,
+                    width: p.radius * 2,
+                    height: p.radius * 2
+                )
+                context.opacity = p.opacity
+                context.fill(Circle().path(in: rect), with: .color(.white))
+            }
         }
-        let img = UIGraphicsGetImageFromCurrentImageContext()!
-        UIGraphicsEndImageContext()
-        return img
-    }()
+        .blendMode(.overlay)
+        .allowsHitTesting(false)
+        .ignoresSafeArea()
+        .onAppear {
+            points = (0..<800).map { _ in
+                GrainPoint(
+                    x: CGFloat.random(in: 0...1),
+                    y: CGFloat.random(in: 0...1),
+                    radius: CGFloat.random(in: 0.6...1.0),
+                    opacity: Double.random(in: 0.018...0.035)
+                )
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────
+// MARK: - Vignette
+// ─────────────────────────────────────────
+
+struct VignetteOverlay: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                .frame(height: 180)
+                .frame(maxHeight: .infinity, alignment: .top)
+            LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                .frame(height: 180)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+            LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
+                .frame(width: 180)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing)
+                .frame(width: 180)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .opacity(0.25)
+        .allowsHitTesting(false)
+        .ignoresSafeArea()
+    }
 }
 
 // ─────────────────────────────────────────

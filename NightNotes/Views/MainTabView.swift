@@ -31,7 +31,7 @@ struct MainTabView: View {
                         .transition(.opacity)
                 }
             }
-            .animation(.easeInOut(duration: 0.3), value: activeTab)
+            .animation(.easeInOut(duration: 0.55), value: activeTab)
             .transition(.opacity.combined(with: .scale(scale: 0.97)))
 
             // Tab bar
@@ -57,7 +57,7 @@ struct NNTabBar: View {
         HStack(spacing: 0) {
             TabBarItem(
                 symbol: "✦",
-                label: "New",
+                label: "Dream",
                 isActive: activeTab == .new,
                 onTap: { activeTab = .new }
             )
@@ -74,11 +74,11 @@ struct NNTabBar: View {
                 onTap: { activeTab = .settings }
             )
         }
-        .padding(.top, 12)
+        .padding(.top, 16)
         .padding(.bottom, 32)
         .background(
             LinearGradient(
-                colors: [NNColour.void.opacity(0), NNColour.void.opacity(0.92)],
+                colors: [NNColour.void.opacity(0), NNColour.void.opacity(0.74)],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -97,7 +97,7 @@ struct TabBarItem: View {
             VStack(spacing: 4) {
                 Text(symbol)
                     .font(.system(size: 18))
-                    .foregroundColor(isActive ? NNColour.textPrimary : NNColour.textMuted.opacity(0.5))
+                    .foregroundColor(NNColour.textPrimary.opacity(isActive ? 0.75 : 0.3))
                     .shadow(
                         color: isActive ? NNColour.orbRose.opacity(0.4) : .clear,
                         radius: isActive ? 6 : 0
@@ -106,7 +106,7 @@ struct TabBarItem: View {
                 Text(label)
                     .font(NNFont.ui(9))
                     .tracking(2)
-                    .foregroundColor(isActive ? NNColour.textPrimary.opacity(0.8) : NNColour.textMuted.opacity(0.5))
+                    .foregroundColor(NNColour.textPrimary.opacity(isActive ? 0.75 : 0.3))
             }
             .frame(maxWidth: .infinity)
         }
