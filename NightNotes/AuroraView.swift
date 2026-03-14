@@ -93,9 +93,9 @@ struct AuroraCanvas: View {
                     // Rose/pink tight bloom — bottom-left, 28s drift
                     Circle()
                         .fill(Color(red: 0.85, green: 0.35, blue: 0.55))
-                        .frame(width: 120, height: 120)
-                        .blur(radius: 80)
-                        .opacity(0.15)
+                        .frame(width: 200, height: 200)
+                        .blur(radius: 50)
+                        .opacity(0.22)
                         .position(
                             x: w * 0.18 + 30 * CGFloat(sin(t * .pi * 2 / 28)),
                             y: h * 0.78 + 20 * CGFloat(cos(t * .pi * 2 / 28))
@@ -213,7 +213,7 @@ struct FilmGrainCanvas: View {
                 context.fill(Circle().path(in: rect), with: .color(.white))
             }
         }
-        .blendMode(.overlay)
+        .blendMode(.screen)
         .allowsHitTesting(false)
         .ignoresSafeArea()
         .onAppear {
@@ -222,7 +222,7 @@ struct FilmGrainCanvas: View {
                     x: CGFloat.random(in: 0...1),
                     y: CGFloat.random(in: 0...1),
                     radius: CGFloat.random(in: 0.6...1.0),
-                    opacity: Double.random(in: 0.018...0.035)
+                    opacity: Double.random(in: 0.03...0.06)
                 )
             }
         }
@@ -235,23 +235,15 @@ struct FilmGrainCanvas: View {
 
 struct VignetteOverlay: View {
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
-                .frame(height: 180)
-                .frame(maxHeight: .infinity, alignment: .top)
-            LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                .frame(height: 180)
-                .frame(maxHeight: .infinity, alignment: .bottom)
-            LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
-                .frame(width: 180)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing)
-                .frame(width: 180)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .opacity(0.25)
-        .allowsHitTesting(false)
-        .ignoresSafeArea()
+        Rectangle()
+            .fill(RadialGradient(
+                gradient: Gradient(colors: [.clear, Color.black.opacity(0.45)]),
+                center: .center,
+                startRadius: 80,
+                endRadius: 420
+            ))
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
     }
 }
 
