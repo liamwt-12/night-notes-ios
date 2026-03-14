@@ -3,7 +3,7 @@ import SwiftUI
 // ─────────────────────────────────────────
 // MARK: - Main Tab View
 // ─────────────────────────────────────────
-// Three tabs: New dream / Journal / You
+// Three tabs: Dream / Journal / You
 // Custom tab bar — no iOS chrome, lives directly on aurora
 
 struct MainTabView: View {

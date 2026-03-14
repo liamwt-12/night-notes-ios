@@ -48,6 +48,11 @@ struct ReflectionView: View {
             }
         }
         .animation(.easeInOut(duration: 0.5), value: landingPhase)
+        .onAppear {
+            if lineVisible.indices.contains(3) && lineVisible[3] && displayedWordCount == 0 {
+                startTypewriter()
+            }
+        }
         .onChange(of: lineVisible) { visible in
             if visible.indices.contains(3) && visible[3] && displayedWordCount == 0 {
                 startTypewriter()
@@ -123,10 +128,10 @@ struct ReflectionView: View {
                         Rectangle()
                             .fill(NNColour.textPrimary.opacity(0.2))
                             .frame(width: 1)
-                        Text("\"\(dream.rawText.prefix(80))…\"")
+                        Text("\(dream.rawText.prefix(80))…")
                             .font(NNFont.body(13))
                             .italic()
-                            .foregroundColor(NNColour.textPrimary.opacity(0.5))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.25))
                             .tracking(0.5)
                             .lineSpacing(3)
                             .lineLimit(2)

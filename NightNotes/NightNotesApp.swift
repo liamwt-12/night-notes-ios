@@ -18,25 +18,25 @@ struct NightNotesApp: App {
 }
 
 // ─────────────────────────────────────────
-// MARK: - Root View (Bloom Splash)
+// MARK: - Root View (The Void Splash)
 // ─────────────────────────────────────────
 
 struct RootView: View {
     @EnvironmentObject var auth: AuthManager
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
-    @State private var bloomFinished = false
-    @State private var bloomScale: CGFloat = 0.001
+    @State private var splashFinished = false
+    @State private var bloomDiameter: CGFloat = 0
+    @State private var bloomOpacity: Double = 1
     @State private var wordmarkOpacity: Double = 0
-    @State private var wordmarkScale: CGFloat = 0.85
 
     private var showContent: Bool {
-        bloomFinished && !auth.isLoading
+        splashFinished && !auth.isLoading
     }
 
     var body: some View {
         ZStack {
-            Color(hex: "0b0717").ignoresSafeArea()
+            Color(hex: "080511").ignoresSafeArea()
 
             if showContent {
                 Group {
@@ -48,54 +48,53 @@ struct RootView: View {
                 }
                 .transition(.opacity)
             } else {
-                bloomView
+                splashView
                     .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.6), value: showContent)
+        .animation(.easeInOut(duration: 0.5), value: showContent)
         .task {
             await auth.checkSession()
         }
         .onAppear {
-            // Bloom: small orb expands to fill screen
-            withAnimation(.easeInOut(duration: 2.0)) {
-                bloomScale = 1.0
-            }
-            // Wordmark fades in 0.4s into the bloom
+            // 0.4s: bloom begins expanding from centre
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                withAnimation(.easeInOut(duration: 1.2)) {
-                    wordmarkOpacity = 1.0
-                    wordmarkScale = 1.0
+                withAnimation(.easeOut(duration: 2.2)) {
+                    bloomDiameter = 500
                 }
             }
-            // Bloom completes at 2.2s
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
-                bloomFinished = true
+            // 0.8s: wordmark fades in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                withAnimation(.easeInOut(duration: 1.2)) {
+                    wordmarkOpacity = 1
+                }
+            }
+            // 2.8s: bloom fades out
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
+                withAnimation(.easeOut(duration: 0.8)) {
+                    bloomOpacity = 0
+                }
+            }
+            // 3.0s: transition to app
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                splashFinished = true
             }
         }
     }
 
-    private var bloomView: some View {
+    private var splashView: some View {
         ZStack {
-            // Expanding radial gradient — deep violet edges, rose-purple centre
-            GeometryReader { geo in
-                RadialGradient(
-                    colors: [Color(hex: "3d1654"), Color(hex: "1a0b2e"), Color(hex: "0b0717")],
-                    center: .center,
-                    startRadius: 0,
-                    endRadius: max(geo.size.width, geo.size.height) * 0.7
-                )
-                .scaleEffect(bloomScale)
-            }
-            .ignoresSafeArea()
+            Circle()
+                .fill(Color(red: 0.48, green: 0.25, blue: 0.77).opacity(0.22))
+                .frame(width: bloomDiameter, height: bloomDiameter)
+                .blur(radius: 80)
+                .opacity(bloomOpacity)
 
-            // Wordmark
             Text("night notes")
-                .font(NNFont.ui(11))
-                .tracking(6)
-                .foregroundColor(NNColour.textPrimary)
+                .font(.custom("DMSans-Regular", size: 10).weight(.ultraLight))
+                .tracking(9)
+                .foregroundColor(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.55))
                 .opacity(wordmarkOpacity)
-                .scaleEffect(wordmarkScale)
         }
     }
 }
