@@ -25,6 +25,7 @@ struct DreamEntryView: View {
     @State private var thinkingPhraseIndex = 0
     @State private var thinkingPhraseVisible = false
     @State private var thinkingProgress: Double = 0
+    @State private var progressTimer: Timer?
 
     // Voice input
     @StateObject private var speechRecogniser = SpeechRecogniser()
@@ -310,7 +311,7 @@ struct DreamEntryView: View {
 
             // Cycling phrase
             Text(Self.thinkingPhrases[thinkingPhraseIndex])
-                .font(.custom("CormorantGaramond-Italic", size: 22))
+                .font(.custom("PlayfairDisplay-Italic", size: 20))
                 .foregroundColor(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.5))
                 .multilineTextAlignment(.center)
                 .opacity(thinkingPhraseVisible ? 1 : 0)
@@ -335,9 +336,14 @@ struct DreamEntryView: View {
             thinkingPhraseVisible = false
             thinkingProgress = 0
 
-            // Start progress arc
-            withAnimation(.linear(duration: 10)) {
-                thinkingProgress = 1.0
+            // Progress arc via timer (0.0 → 1.0 over 10s)
+            progressTimer?.invalidate()
+            progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+                DispatchQueue.main.async {
+                    guard phase == .revealing else { timer.invalidate(); return }
+                    thinkingProgress = min(1.0, thinkingProgress + 0.01)
+                    if thinkingProgress >= 1.0 { timer.invalidate() }
+                }
             }
 
             // Cycle through phrases
@@ -442,6 +448,8 @@ struct DreamEntryView: View {
         showWhisper = false
         thinkingPhraseVisible = false
         thinkingProgress = 0
+        progressTimer?.invalidate()
+        progressTimer = nil
         phase = .entry
         showWhisper = true
     }
