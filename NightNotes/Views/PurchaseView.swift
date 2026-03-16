@@ -243,7 +243,7 @@ struct PurchaseView: View {
         let annualCost = monthly.price * 12
         guard annualCost > 0 else { return 0 }
         let savings = (annualCost - yearly.price) / annualCost * 100
-        return Int(savings.rounded())
+        return Int(NSDecimalNumber(decimal: savings).intValue)
     }
 }
 
