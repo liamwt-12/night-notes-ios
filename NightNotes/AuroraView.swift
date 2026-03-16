@@ -28,45 +28,60 @@ struct AuroraView: View {
 // ─────────────────────────────────────────
 
 struct AuroraPalette {
+    let bg: Color
     let primary: Color
     let primaryOpacity: Double
     let secondary: Color
     let secondaryOpacity: Double
+    let accent: Color
+    let accentOpacity: Double
 
     static func current() -> AuroraPalette {
         let hour = Calendar.current.component(.hour, from: Date())
         switch hour {
         case 5..<10:
-            // Morning — rose/amber warmth
+            // Morning — deep rose/pink, sunrise feeling
             return AuroraPalette(
-                primary: Color(red: 180/255, green: 80/255, blue: 120/255),
-                primaryOpacity: 0.55,
-                secondary: Color(red: 140/255, green: 60/255, blue: 160/255),
-                secondaryOpacity: 0.35
+                bg: Color(hex: "0d0810"),
+                primary: Color(red: 0.75, green: 0.32, blue: 0.48),
+                primaryOpacity: 0.6,
+                secondary: Color(red: 0.55, green: 0.25, blue: 0.65),
+                secondaryOpacity: 0.4,
+                accent: Color(red: 0.85, green: 0.45, blue: 0.25),
+                accentOpacity: 0.15
             )
         case 10..<17:
-            // Daytime — neutral violet/rose (original)
+            // Daytime — current violet/rose
             return AuroraPalette(
-                primary: Color(red: 123/255, green: 63/255, blue: 196/255),
-                primaryOpacity: 0.50,
-                secondary: Color(red: 196/255, green: 94/255, blue: 171/255),
-                secondaryOpacity: 0.40
+                bg: Color(hex: "080511"),
+                primary: Color(red: 0.48, green: 0.25, blue: 0.77),
+                primaryOpacity: 0.55,
+                secondary: Color(red: 0.77, green: 0.37, blue: 0.67),
+                secondaryOpacity: 0.45,
+                accent: Color(red: 0.31, green: 0.08, blue: 0.55),
+                accentOpacity: 0.2
             )
         case 17..<22:
-            // Evening — deeper violet, warm dusk
+            // Evening — deep warm rose, clearly different
             return AuroraPalette(
-                primary: Color(red: 100/255, green: 40/255, blue: 160/255),
-                primaryOpacity: 0.55,
-                secondary: Color(red: 160/255, green: 60/255, blue: 100/255),
-                secondaryOpacity: 0.45
+                bg: Color(hex: "0d0608"),
+                primary: Color(red: 0.65, green: 0.18, blue: 0.35),
+                primaryOpacity: 0.65,
+                secondary: Color(red: 0.42, green: 0.15, blue: 0.62),
+                secondaryOpacity: 0.5,
+                accent: Color(red: 0.75, green: 0.30, blue: 0.15),
+                accentOpacity: 0.2
             )
         default:
-            // Night (22-4) — deep ink
+            // Night (22-4) — deep ink violet
             return AuroraPalette(
-                primary: Color(red: 60/255, green: 20/255, blue: 120/255),
-                primaryOpacity: 0.60,
-                secondary: Color(red: 80/255, green: 30/255, blue: 100/255),
-                secondaryOpacity: 0.35
+                bg: Color(hex: "040210"),
+                primary: Color(red: 0.22, green: 0.08, blue: 0.48),
+                primaryOpacity: 0.65,
+                secondary: Color(red: 0.32, green: 0.10, blue: 0.40),
+                secondaryOpacity: 0.4,
+                accent: Color(red: 0.15, green: 0.05, blue: 0.35),
+                accentOpacity: 0.15
             )
         }
     }
@@ -83,7 +98,7 @@ struct AuroraCanvas: View {
             let t = Double(time)
 
             ZStack {
-                NNColour.void
+                palette.bg
 
                 // Blob 1 — Primary, upper left (8s breathing cycle)
                 RadialBlob(
@@ -125,14 +140,14 @@ struct AuroraCanvas: View {
                     opacity: palette.secondaryOpacity * 1.625
                 )
 
-                // Blob 5 — Ember accent, top right (8s cycle)
+                // Blob 5 — Accent, top right (8s cycle)
                 RadialBlob(
-                    color: Color(red: 0.843, green: 0.314, blue: 0.188),
+                    color: palette.accent,
                     centerX: 0.88 + 0.04 * sin(t * 0.200),
                     centerY: 0.08 + 0.04 * cos(t * 0.200),
                     radiusX: w * 0.55 + 15 * CGFloat(sin(t * .pi * 2 / 8.0)),
                     radiusY: h * 0.38 + 15 * CGFloat(cos(t * .pi * 2 / 8.5)),
-                    opacity: 0.45
+                    opacity: palette.accentOpacity * 3.0
                 )
             }
             .frame(width: w, height: h)

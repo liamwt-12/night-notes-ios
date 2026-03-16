@@ -186,7 +186,7 @@ struct ReflectionView: View {
             if lineVisible.indices.contains(4) && lineVisible[4] {
                 VStack(spacing: 12) {
                     Button(action: { withAnimation { landingPhase = true } }) {
-                        Text("DID THIS FEEL RIGHT?")
+                        Text("Did this feel right?")
                             .font(NNFont.ui(11))
                             .tracking(3)
                             .foregroundColor(NNColour.textPrimary.opacity(0.6))

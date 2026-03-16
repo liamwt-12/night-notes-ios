@@ -22,11 +22,9 @@ struct DreamEntryView: View {
     @State private var showWhisper = false
 
     // Thinking screen state
-    @State private var thinkingDotIndex = 0
-    @State private var sleepingCount: Int = 0
-    @State private var dreamFragment: String = ""
-    @State private var fragmentVisible = false
-    @State private var thinkingLabelPulse = false
+    @State private var thinkingPhraseIndex = 0
+    @State private var thinkingPhraseVisible = false
+    @State private var thinkingProgress: Double = 0
 
     // Voice input
     @StateObject private var speechRecogniser = SpeechRecogniser()
@@ -299,73 +297,69 @@ struct DreamEntryView: View {
     // MARK: - Thinking Screen
     // ─────────────────────────────────────────
 
+    private static let thinkingPhrases = [
+        "Reading what you wrote\u{2026}",
+        "Finding the pattern beneath it\u{2026}",
+        "Turning over the symbols\u{2026}",
+        "Almost there\u{2026}"
+    ]
+
     private var revealingContent: some View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: 8) {
-                Text(formattedSleepCount)
-                    .font(.custom("PlayfairDisplay-Italic", size: 36))
-                    .foregroundColor(NNColour.textPrimary.opacity(0.07))
-                    .kerning(-1)
-                Text("people asleep right now")
-                    .font(NNFont.ui(8))
-                    .tracking(5)
-                    .foregroundColor(NNColour.textPrimary.opacity(0.15))
-            }
-
-            Spacer()
-
-            Text(dreamFragment)
-                .font(.custom("CormorantGaramond-Italic", size: 17))
-                .foregroundColor(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.45))
+            // Cycling phrase
+            Text(Self.thinkingPhrases[thinkingPhraseIndex])
+                .font(.custom("CormorantGaramond-Italic", size: 22))
+                .foregroundColor(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.5))
                 .multilineTextAlignment(.center)
-                .lineSpacing(6)
+                .opacity(thinkingPhraseVisible ? 1 : 0)
                 .padding(.horizontal, 40)
-                .opacity(fragmentVisible ? 1 : 0)
+                .padding(.bottom, 32)
 
-            Spacer()
-
-            HStack(spacing: 8) {
-                ForEach(0..<3, id: \.self) { i in
-                    Circle()
-                        .fill(.white.opacity(thinkingDotIndex == i ? 0.7 : 0.25))
-                        .frame(width: 5, height: 5)
-                        .animation(.easeInOut(duration: 0.3), value: thinkingDotIndex)
-                }
+            // Progress arc
+            ZStack {
+                Circle()
+                    .stroke(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.12), lineWidth: 1)
+                Circle()
+                    .trim(from: 0, to: thinkingProgress)
+                    .stroke(Color(red: 196/255, green: 94/255, blue: 171/255).opacity(0.4), lineWidth: 1)
+                    .rotationEffect(.degrees(-90))
             }
-            .padding(.bottom, 16)
-
-            Text("Reading the feeling beneath it\u{2026}")
-                .font(NNFont.ui(8))
-                .tracking(4)
-                .foregroundColor(NNColour.textPrimary.opacity(thinkingLabelPulse ? 0.4 : 0.22))
-                .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: thinkingLabelPulse)
+            .frame(width: 48, height: 48)
 
             Spacer()
-                .frame(height: 80)
         }
         .onAppear {
-            sleepingCount = calculateSleepingPopulation()
-            dreamFragment = Self.dreamFragments[Int.random(in: 0..<Self.dreamFragments.count)]
+            thinkingPhraseIndex = 0
+            thinkingPhraseVisible = false
+            thinkingProgress = 0
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                fragmentVisible = true
+            // Start progress arc
+            withAnimation(.linear(duration: 10)) {
+                thinkingProgress = 1.0
             }
 
-            thinkingLabelPulse = true
+            // Cycle through phrases
+            cyclePhrase(at: 0)
+        }
+    }
 
-            Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { timer in
-                DispatchQueue.main.async {
-                    guard phase == .revealing else { timer.invalidate(); return }
-                    thinkingDotIndex = (thinkingDotIndex + 1) % 3
-                }
-            }
+    private func cyclePhrase(at index: Int) {
+        guard index < Self.thinkingPhrases.count, phase == .revealing else { return }
+        thinkingPhraseIndex = index
 
-            Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { timer in
-                DispatchQueue.main.async {
-                    guard phase == .revealing else { timer.invalidate(); return }
-                    sleepingCount = calculateSleepingPopulation()
+        // Fade in
+        withAnimation(.easeIn(duration: 0.8)) { thinkingPhraseVisible = true }
+
+        // Hold 2.5s, then fade out (unless last phrase)
+        let isLast = index == Self.thinkingPhrases.count - 1
+        if !isLast {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8 + 2.5) {
+                guard phase == .revealing else { return }
+                withAnimation(.easeOut(duration: 0.6)) { thinkingPhraseVisible = false }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    cyclePhrase(at: index + 1)
                 }
             }
         }
@@ -446,8 +440,8 @@ struct DreamEntryView: View {
         lineVisible = [false, false, false, false, false]
         activeDream = nil
         showWhisper = false
-        fragmentVisible = false
-        thinkingLabelPulse = false
+        thinkingPhraseVisible = false
+        thinkingProgress = 0
         phase = .entry
         showWhisper = true
     }
@@ -461,52 +455,4 @@ struct DreamEntryView: View {
         f.dateFormat = "h:mm a \u{00B7} EEEE"
         return f.string(from: Date()).lowercased()
     }
-
-    private var formattedSleepCount: String {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        return f.string(from: NSNumber(value: sleepingCount)) ?? "\(sleepingCount)"
-    }
-
-    private func calculateSleepingPopulation() -> Int {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(secondsFromGMT: 0)!
-        let now = Date()
-        let utcH = cal.component(.hour, from: now)
-        let utcM = cal.component(.minute, from: now)
-        let utcTime = Double(utcH) + Double(utcM) / 60.0
-
-        let regions: [(offset: Double, pop: Int)] = [
-            (-5,  330_000_000),
-            (-8,  180_000_000),
-            ( 0,   67_000_000),
-            ( 1,  280_000_000),
-            ( 5.5, 1_400_000_000),
-            ( 8,  1_400_000_000),
-            ( 9,  180_000_000),
-            (-3,  215_000_000),
-        ]
-
-        var total = 0
-        for r in regions {
-            var local = utcTime + r.offset
-            if local < 0 { local += 24 }
-            if local >= 24 { local -= 24 }
-            if local >= 22 || local < 7 { total += r.pop }
-        }
-        return total
-    }
-
-    private static let dreamFragments = [
-        "I was in a house I didn\u{2019}t recognise.",
-        "The corridors kept extending.",
-        "Someone was always one step ahead.",
-        "I couldn\u{2019}t find the door I came in from.",
-        "The water was rising but I wasn\u{2019}t afraid.",
-        "I could hear music I couldn\u{2019}t find.",
-        "My teeth again. Always the teeth.",
-        "I was late for something I couldn\u{2019}t name.",
-        "They were there but wouldn\u{2019}t look at me.",
-        "I knew I was dreaming but couldn\u{2019}t wake up.",
-    ]
 }

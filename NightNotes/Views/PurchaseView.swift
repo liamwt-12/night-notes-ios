@@ -171,16 +171,6 @@ struct PurchaseView: View {
                                     .tracking(2)
                                     .foregroundColor(NNColour.textPrimary)
                             }
-
-                            // Introductory offer for yearly
-                            if let intro = yearly.subscription?.introductoryOffer {
-                                if !purchase.purchasingYearly {
-                                    Text("Start for \(intro.displayPrice)")
-                                        .font(NNFont.ui(10))
-                                        .tracking(1)
-                                        .foregroundColor(NNColour.orbAmber.opacity(0.7))
-                                }
-                            }
                         }
                         .padding(.horizontal, 22)
                         .padding(.vertical, 20)
@@ -198,23 +188,10 @@ struct PurchaseView: View {
                 if let monthly = purchase.monthlyProduct {
                     Button(action: { Task { await purchase.purchaseMonthly() } }) {
                         HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                if let intro = monthly.subscription?.introductoryOffer {
-                                    Text("Start for \(intro.displayPrice)")
-                                        .font(NNFont.ui(13))
-                                        .tracking(2)
-                                        .foregroundColor(NNColour.textPrimary.opacity(0.7))
-                                    Text("then \(monthly.displayPrice)/month")
-                                        .font(NNFont.ui(10))
-                                        .tracking(1)
-                                        .foregroundColor(NNColour.textPrimary.opacity(0.4))
-                                } else {
-                                    Text(monthly.displayPrice + " / month")
-                                        .font(NNFont.ui(12))
-                                        .tracking(2)
-                                        .foregroundColor(NNColour.textPrimary.opacity(0.5))
-                                }
-                            }
+                            Text(monthly.displayPrice + " / month")
+                                .font(NNFont.ui(12))
+                                .tracking(2)
+                                .foregroundColor(NNColour.textPrimary.opacity(0.5))
                             Spacer()
                             if purchase.purchasingMonthly {
                                 ProgressView()
@@ -237,6 +214,16 @@ struct PurchaseView: View {
                         .cornerRadius(12)
                     }
                     .disabled(purchase.purchasingMonthly)
+                }
+
+                // Quiet intro offer
+                if purchase.monthlyProduct?.subscription?.introductoryOffer != nil {
+                    Text("New to Night Notes Pro? First month 99p.")
+                        .font(NNFont.ui(11, weight: .ultraLight))
+                        .italic()
+                        .foregroundColor(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.3))
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 10)
                 }
             }
         } else if loadTimedOut {

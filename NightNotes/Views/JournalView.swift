@@ -154,19 +154,6 @@ struct JournalView: View {
     // MARK: - Empty State
     // ─────────────────────────────────────────
 
-    private static let dreamFacts = [
-        "The average person has 4\u{2013}6 dreams every night.",
-        "Dreams typically last 5\u{2013}20 minutes.",
-        "You spend roughly 6 years of your life dreaming.",
-        "Most dreams are forgotten within 10 minutes of waking.",
-        "Recurring dreams are reported by 60\u{2013}75% of adults."
-    ]
-
-    private var dailyFact: String {
-        let day = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0
-        return Self.dreamFacts[day % Self.dreamFacts.count]
-    }
-
     private var emptyState: some View {
         VStack(spacing: 16) {
             Spacer()
@@ -178,12 +165,6 @@ struct JournalView: View {
                 .font(NNFont.ui(9))
                 .tracking(4)
                 .foregroundColor(NNColour.textPrimary.opacity(0.18))
-            Text(dailyFact)
-                .font(NNFont.ui(11))
-                .foregroundColor(NNColour.textPrimary.opacity(0.2))
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 280)
-                .padding(.top, 8)
             Spacer()
         }
         .padding(.horizontal, 36)
