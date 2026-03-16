@@ -49,20 +49,26 @@ export async function handler(event: any) {
 
     // ── Parse body ────────────────────────
     const body = JSON.parse(event.body ?? "{}");
-    const { dreams } = body;
+    const { dreams, type } = body;
 
     if (!dreams || dreams.trim().length < 20) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "Not enough dream content" }) };
     }
 
+    // ── Build prompt ────────────────────
+    const isMonth = type === "month";
+    const prompt = isMonth
+      ? `You are a dream analyst. The user has shared their dreams from the past month. Write a beautiful, personal monthly reflection in 3-4 sentences. Identify the dominant themes, recurring symbols, and any emotional arc across the month. Write directly to the user in second person. Be specific, warm, and genuine.\n\n${dreams}`
+      : `The following are dream entries from one person over the past week. Write a single paragraph (max 60 words) identifying the recurring themes, symbols, or emotional patterns. Write in second person, warm and observational, not clinical. Start with "This week,"\n\n${dreams}`;
+
     // ── Call Claude ───────────────────────
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 256,
+      max_tokens: isMonth ? 400 : 256,
       messages: [
         {
           role: "user",
-          content: `The following are dream entries from one person over the past week. Write a single paragraph (max 60 words) identifying the recurring themes, symbols, or emotional patterns. Write in second person, warm and observational, not clinical. Start with "This week,"\n\n${dreams}`,
+          content: prompt,
         },
       ],
     });

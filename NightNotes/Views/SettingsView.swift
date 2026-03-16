@@ -4,6 +4,7 @@ import UserNotifications
 struct SettingsView: View {
     @EnvironmentObject var auth:    AuthManager
     @EnvironmentObject var purchase: PurchaseManager
+    @EnvironmentObject var store:   DreamStore
     @State private var showDreamerTypePicker = false
     @State private var showPaywall = false
     @State private var morningReminderEnabled = UserDefaults.standard.bool(forKey: "morningReminderEnabled")
@@ -107,6 +108,29 @@ struct SettingsView: View {
                         }
                         .padding(.vertical, 14)
                     }
+                }
+
+                Hairline()
+
+                settingsSection("Your journey") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("\(store.dreams.count) night\(store.dreams.count == 1 ? "" : "s") recorded")
+                            .font(.custom("PlayfairDisplay-Italic", size: 16))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.7))
+
+                        if store.currentStreak >= 2 {
+                            Text("\(store.currentStreak) night streak")
+                                .font(.custom("PlayfairDisplay-Italic", size: 16))
+                                .foregroundColor(NNColour.textPrimary.opacity(0.7))
+                        }
+
+                        if let created = auth.user?.createdAt {
+                            Text("Member since \(memberSinceLabel(created))")
+                                .font(.custom("PlayfairDisplay-Italic", size: 16))
+                                .foregroundColor(NNColour.textPrimary.opacity(0.7))
+                        }
+                    }
+                    .padding(.vertical, 14)
                 }
 
                 Hairline()
@@ -221,6 +245,12 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+
+    private func memberSinceLabel(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "MMMM yyyy"
+        return f.string(from: date)
     }
 
     private func cancelMorningReminder() {

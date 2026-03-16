@@ -20,6 +20,7 @@ struct JournalView: View {
                 Task {
                     await store.fetchDreams(userId: id)
                     await store.fetchWeekSummary()
+                    await store.fetchMonthSummary()
                 }
             }
         }
@@ -87,20 +88,48 @@ struct JournalView: View {
 
             ScrollView(showsIndicators: false) {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    // Weekly summary (no card, just text)
+                    // Weekly summary — editorial pull-quote
                     if let summary = store.weekSummary, store.dreams.count >= 7 {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("THIS WEEK")
-                                .font(NNFont.ui(9))
-                                .tracking(6)
-                                .foregroundColor(NNColour.textPrimary.opacity(0.2))
-                            Text(summary)
-                                .font(.custom("PlayfairDisplay-Italic", size: 14))
-                                .foregroundColor(NNColour.textPrimary.opacity(0.5))
-                                .lineSpacing(4)
-                                .kerning(0.3)
+                        HStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color(red: 196/255, green: 94/255, blue: 171/255).opacity(0.3))
+                                .frame(width: 2)
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(summary)
+                                    .font(.custom("CormorantGaramond-Italic", size: 18))
+                                    .foregroundColor(NNColour.textPrimary.opacity(0.65))
+                                    .lineSpacing(6)
+                                Text("THIS WEEK \u{00B7} NIGHT NOTES")
+                                    .font(NNFont.ui(8))
+                                    .tracking(5)
+                                    .foregroundColor(NNColour.textPrimary.opacity(0.2))
+                            }
+                            .padding(.leading, 20)
                         }
-                        .padding(.bottom, 24)
+                        .padding(.top, 32)
+                        .padding(.bottom, 40)
+                        Hairline().padding(.bottom, 20)
+                    }
+
+                    // Monthly summary — editorial pull-quote (violet)
+                    if let summary = store.monthSummary, store.dreams.count >= 20 {
+                        HStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color(red: 123/255, green: 63/255, blue: 196/255).opacity(0.3))
+                                .frame(width: 2)
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(summary)
+                                    .font(.custom("CormorantGaramond-Italic", size: 18))
+                                    .foregroundColor(NNColour.textPrimary.opacity(0.65))
+                                    .lineSpacing(6)
+                                Text("THIS MONTH \u{00B7} NIGHT NOTES")
+                                    .font(NNFont.ui(8))
+                                    .tracking(5)
+                                    .foregroundColor(NNColour.textPrimary.opacity(0.2))
+                            }
+                            .padding(.leading, 20)
+                        }
+                        .padding(.bottom, 40)
                         Hairline().padding(.bottom, 20)
                     }
 
@@ -125,6 +154,19 @@ struct JournalView: View {
     // MARK: - Empty State
     // ─────────────────────────────────────────
 
+    private static let dreamFacts = [
+        "The average person has 4\u{2013}6 dreams every night.",
+        "Dreams typically last 5\u{2013}20 minutes.",
+        "You spend roughly 6 years of your life dreaming.",
+        "Most dreams are forgotten within 10 minutes of waking.",
+        "Recurring dreams are reported by 60\u{2013}75% of adults."
+    ]
+
+    private var dailyFact: String {
+        let day = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0
+        return Self.dreamFacts[day % Self.dreamFacts.count]
+    }
+
     private var emptyState: some View {
         VStack(spacing: 16) {
             Spacer()
@@ -136,6 +178,12 @@ struct JournalView: View {
                 .font(NNFont.ui(9))
                 .tracking(4)
                 .foregroundColor(NNColour.textPrimary.opacity(0.18))
+            Text(dailyFact)
+                .font(NNFont.ui(11))
+                .foregroundColor(NNColour.textPrimary.opacity(0.2))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 280)
+                .padding(.top, 8)
             Spacer()
         }
         .padding(.horizontal, 36)

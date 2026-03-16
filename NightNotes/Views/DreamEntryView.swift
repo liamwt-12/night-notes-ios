@@ -70,6 +70,19 @@ struct DreamEntryView: View {
                             .tracking(6)
                             .foregroundColor(NNColour.textPrimary.opacity(0.5))
                         Spacer()
+
+                        if store.currentStreak >= 2 {
+                            Text("\(store.currentStreak) nights")
+                                .font(NNFont.ui(11, weight: .light))
+                                .foregroundColor(NNColour.orbAmber.opacity(0.7))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(Color(red: 1, green: 160/255, blue: 50/255).opacity(0.12))
+                                .overlay(Capsule().stroke(Color(red: 1, green: 160/255, blue: 50/255).opacity(0.25), lineWidth: 1))
+                                .clipShape(Capsule())
+                                .padding(.top, 4)
+                        }
+
                         if let user = auth.user, !user.subscriptionActive {
                             Text("\(user.interpretationsRemaining) dreams left")
                                 .font(NNFont.ui(10))

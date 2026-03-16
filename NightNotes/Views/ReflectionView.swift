@@ -24,6 +24,9 @@ struct ReflectionView: View {
     @AppStorage("positiveRatings") private var positiveRatings = 0
     @AppStorage("hasRequestedReview") private var hasRequestedReview = false
 
+    // Streak celebration
+    @State private var streakMessage: String?
+
     private var interpretationWords: [String] {
         interpretation.components(separatedBy: " ")
     }
@@ -112,6 +115,8 @@ struct ReflectionView: View {
                 }
                 .padding(.bottom, 28)
 
+                Spacer().frame(height: 24)
+
                 Text("One way to see it")
                     .font(NNFont.display(48))
                     .foregroundColor(NNColour.textPrimary)
@@ -125,7 +130,7 @@ struct ReflectionView: View {
                         Rectangle()
                             .fill(NNColour.textPrimary.opacity(0.2))
                             .frame(width: 1)
-                        Text("\(dream.rawText.prefix(80))…")
+                        Text("\(dream.rawText.prefix(80))\u{2026}")
                             .font(NNFont.body(13))
                             .italic()
                             .foregroundColor(NNColour.textPrimary.opacity(0.25))
@@ -136,11 +141,11 @@ struct ReflectionView: View {
                     }
                     .fixedSize(horizontal: false, vertical: true)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    .padding(.bottom, 16)
+                    .padding(.bottom, 20)
                 }
 
                 if lineVisible.indices.contains(2) && lineVisible[2] {
-                    Hairline().transition(.opacity).padding(.bottom, 16)
+                    Hairline().transition(.opacity).padding(.bottom, 24)
                 }
 
                 if lineVisible.indices.contains(3) && lineVisible[3] {
@@ -258,15 +263,26 @@ struct ReflectionView: View {
                         isSelected: selectedRating == rating,
                         onTap: {
                             selectedRating = rating
-                            // Track positive ratings for review request
                             if rating == .yes {
                                 positiveRatings += 1
+                                let streak = store.currentStreak
+                                let milestones: [Int: String] = [
+                                    3: "3 nights in a row.",
+                                    7: "A week of dreams.",
+                                    14: "Two weeks running.",
+                                    21: "Three weeks deep.",
+                                    30: "A month of dreams.",
+                                    60: "Two months. Remarkable.",
+                                    100: "100 nights. Extraordinary."
+                                ]
+                                if let msg = milestones[streak] {
+                                    withAnimation(.easeIn(duration: 0.5)) { streakMessage = msg }
+                                }
                             }
                             Task {
                                 await store.updateLanding(dreamId: dream.id, rating: rating)
                                 try? await Task.sleep(nanoseconds: 600_000_000)
 
-                                // Review request after positive moment
                                 if rating == .yes && positiveRatings >= 3 && !hasRequestedReview {
                                     try? await Task.sleep(nanoseconds: 1_500_000_000)
                                     requestReview()
@@ -277,6 +293,13 @@ struct ReflectionView: View {
                         }
                     )
                 }
+            }
+
+            if let msg = streakMessage {
+                Text(msg)
+                    .font(.custom("CormorantGaramond-Italic", size: 15))
+                    .foregroundColor(NNColour.textPrimary.opacity(0.45))
+                    .padding(.top, 20)
             }
 
             Spacer()

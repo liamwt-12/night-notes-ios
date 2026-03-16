@@ -6,6 +6,7 @@ class DreamStore: ObservableObject {
     @Published var dreams: [DreamEntry] = []
     @Published var isLoading = false
     @Published var weekSummary: String? = UserDefaults.standard.string(forKey: "weekSummary")
+    @Published var monthSummary: String? = UserDefaults.standard.string(forKey: "monthSummary")
     @Published var recurringWords: [String] = []
 
     // ─────────────────────────────────────────
@@ -254,6 +255,52 @@ class DreamStore: ObservableObject {
             UserDefaults.standard.set(Date(), forKey: "weekSummaryDate")
         } catch {
             print("❌ Week summary error: \(error)")
+        }
+    }
+
+    // ─────────────────────────────────────────
+    // MARK: - Monthly Summary
+    // ─────────────────────────────────────────
+
+    func fetchMonthSummary() async {
+        guard dreams.count >= 20 else { return }
+
+        if let lastDate = UserDefaults.standard.object(forKey: "monthSummaryDate") as? Date,
+           Date().timeIntervalSince(lastDate) < 86400 * 30,
+           monthSummary != nil {
+            return
+        }
+
+        let recentTexts = dreams.prefix(20).map { $0.rawText }
+        let joined = recentTexts.joined(separator: "\n\n")
+
+        do {
+            let session = try await supabase.auth.session
+            let token = session.accessToken
+
+            let url = URL(string: "https://night-notes-api.netlify.app/.netlify/functions/week-summary")!
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            req.timeoutInterval = 45
+
+            let body: [String: String] = ["dreams": joined, "type": "month"]
+            req.httpBody = try JSONEncoder().encode(body)
+
+            let (data, response) = try await URLSession.shared.data(for: req)
+
+            guard let http = response as? HTTPURLResponse,
+                  (200...299).contains(http.statusCode) else { return }
+
+            struct SummaryResponse: Codable { let summary: String }
+            let result = try JSONDecoder().decode(SummaryResponse.self, from: data)
+
+            monthSummary = result.summary
+            UserDefaults.standard.set(result.summary, forKey: "monthSummary")
+            UserDefaults.standard.set(Date(), forKey: "monthSummaryDate")
+        } catch {
+            print("❌ Month summary error: \(error)")
         }
     }
 }
