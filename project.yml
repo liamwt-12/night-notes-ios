@@ -7,7 +7,7 @@ options:
 settings:
   base:
     MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "25"
+    CURRENT_PROJECT_VERSION: "26"
     DEVELOPMENT_TEAM: U5AU32RQ46
     SWIFT_VERSION: "5.9"
 
@@ -17,6 +17,8 @@ targets:
     platform: iOS
     sources:
       - path: NightNotes
+    scheme:
+      storeKitConfiguration: NightNotes.storekit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: uk.nightnotes.app

@@ -1,0 +1,74 @@
+{
+  "identifier" : "4AEB840E",
+  "nonRenewingSubscriptions" : [ ],
+  "products" : [ ],
+  "settings" : {
+    "_applicationInternalID" : "nightnotes",
+    "_developerTeamID" : "U5AU32RQ46",
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_GB",
+    "_storeKitErrors" : [ ],
+    "_timeRate" : 6
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "nightnotes_pro",
+      "localizations" : [ ],
+      "name" : "Night Notes Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [ ],
+          "codeOffers" : [ ],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "monthly_001",
+          "introductoryOffer" : {
+            "displayPrice" : "0.99",
+            "internalID" : "intro_monthly",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "payAsYouGo",
+            "subscriptionPeriod" : "P1M"
+          },
+          "localizations" : [
+            {
+              "description" : "Unlimited dream interpretations, updated monthly.",
+              "displayName" : "Night Notes Pro Monthly",
+              "locale" : "en_GB"
+            }
+          ],
+          "productID" : "uk.nightnotes.subscription.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Night Notes Pro Monthly",
+          "subscriptionGroupID" : "nightnotes_pro",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [ ],
+          "codeOffers" : [ ],
+          "displayPrice" : "29.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "yearly_001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlimited dream interpretations, billed yearly. Save 50%.",
+              "displayName" : "Night Notes Pro Annual",
+              "locale" : "en_GB"
+            }
+          ],
+          "productID" : "uk.nightnotes.subscription.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Night Notes Pro Annual",
+          "subscriptionGroupID" : "nightnotes_pro",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

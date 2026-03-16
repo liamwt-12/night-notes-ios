@@ -23,9 +23,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Night Notes needs microphone to record your voice.</string>
+	<string>Night Notes needs microphone access to record your dream.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Night Notes uses speech to transcribe your dreams.</string>
+	<string>Night Notes uses speech recognition to transcribe your dreams as you speak them.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Night Notes needs photo library access to save your dream share card.</string>
 	<key>LSApplicationQueriesSchemes</key>

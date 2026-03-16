@@ -1,5 +1,7 @@
 import SwiftUI
 import Combine
+import Speech
+import AVFoundation
 
 struct DreamEntryView: View {
     @EnvironmentObject var auth:    AuthManager
@@ -27,8 +29,7 @@ struct DreamEntryView: View {
 
     // Dissolve state
     @State private var dissolving = false
-    @State private var dissolveTriggered = false
-    @State private var revealGlowing = false
+    @State private var dissolveFaded = false
     @State private var revealFading = false
     @State private var inputPulse = false
 
@@ -38,6 +39,10 @@ struct DreamEntryView: View {
     @State private var dreamFragment: String = ""
     @State private var fragmentVisible = false
     @State private var thinkingLabelPulse = false
+
+    // Voice input
+    @StateObject private var speechRecogniser = SpeechRecogniser()
+    @State private var micPermissionDenied = false
 
     var body: some View {
         ZStack {
@@ -116,36 +121,36 @@ struct DreamEntryView: View {
                     }
                     .padding(.bottom, 14)
 
-                    Text("Before it fades…")
+                    Text(speechRecogniser.isRecording ? "Listening\u{2026}" : "Before it fades\u{2026}")
                         .font(.custom("PlayfairDisplay-Italic", size: 10))
-                        .foregroundColor(NNColour.textPrimary.opacity(0.22))
+                        .foregroundColor(NNColour.textPrimary.opacity(speechRecogniser.isRecording ? 0.4 : 0.22))
                         .opacity(showWhisper ? 1 : 0)
                         .animation(.easeIn(duration: 1.2), value: showWhisper)
+                        .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: speechRecogniser.isRecording)
                         .padding(.bottom, 8)
 
-                    // Text area — switches between editor and dissolving words
+                    // Text area
                     ZStack(alignment: .topLeading) {
-                        if dissolving {
-                            dissolveWordsView
-                        } else {
-                            if dreamText.isEmpty {
-                                Text("Write what you remember…")
-                                    .font(.custom("PlayfairDisplay-Italic", size: 16))
-                                    .foregroundColor(NNColour.textPrimary.opacity(inputPulse ? 0.5 : 0.28))
-                                    .kerning(0.3)
-                                    .padding(.top, 2)
-                                    .allowsHitTesting(false)
-                                    .animation(.easeInOut(duration: 0.4), value: inputPulse)
-                            }
-                            TextEditor(text: $dreamText)
-                                .font(.custom("PlayfairDisplay-Italic", size: 18))
-                                .foregroundColor(NNColour.textPrimary.opacity(0.9))
-                                .scrollContentBackground(.hidden)
-                                .background(Color.clear)
-                                .focused($textFocused)
-                                .lineSpacing(4)
+                        if dreamText.isEmpty && !dissolving {
+                            Text("Write what you remember\u{2026}")
+                                .font(.custom("PlayfairDisplay-Italic", size: 16))
+                                .foregroundColor(NNColour.textPrimary.opacity(inputPulse ? 0.5 : 0.28))
                                 .kerning(0.3)
+                                .padding(.top, 2)
+                                .allowsHitTesting(false)
+                                .animation(.easeInOut(duration: 0.4), value: inputPulse)
                         }
+                        TextEditor(text: $dreamText)
+                            .font(.custom("PlayfairDisplay-Italic", size: 18))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.9))
+                            .scrollContentBackground(.hidden)
+                            .background(Color.clear)
+                            .focused($textFocused)
+                            .lineSpacing(4)
+                            .kerning(0.3)
+                            .opacity(dissolving ? (dissolveFaded ? 0 : 1) : 1)
+                            .offset(y: dissolving && dissolveFaded ? -10 : 0)
+                            .animation(.easeIn(duration: 0.7), value: dissolveFaded)
                     }
                     .padding(.top, 16)
                     .frame(minHeight: 200)
@@ -170,7 +175,21 @@ struct DreamEntryView: View {
                     .transition(.opacity)
                 }
 
+                // Mic button
+                HStack {
+                    Spacer()
+                    micButton
+                }
+
                 revealButton
+
+                if micPermissionDenied {
+                    Text("Enable microphone access in Settings to speak your dreams.")
+                        .font(NNFont.ui(11))
+                        .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                        .multilineTextAlignment(.center)
+                        .transition(.opacity)
+                }
 
                 if let err = errorMessage {
                     Text(err)
@@ -219,24 +238,38 @@ struct DreamEntryView: View {
                 typingBrightness = hasText ? 0.08 : 0
             }
         }
+        .onChange(of: speechRecogniser.transcript) { newTranscript in
+            if speechRecogniser.isRecording {
+                dreamText = newTranscript
+            }
+        }
     }
 
     // ─────────────────────────────────────────
-    // MARK: - Dissolving Words
+    // MARK: - Mic Button
     // ─────────────────────────────────────────
 
-    private var dissolveWordsView: some View {
-        let words = dreamText.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
-        let stagger = min(0.06, 1.2 / Double(max(words.count, 1)))
-        return WordFlowLayout(spacing: 5, lineSpacing: 8) {
-            ForEach(Array(words.enumerated()), id: \.offset) { index, word in
-                Text(word)
-                    .font(.custom("PlayfairDisplay-Italic", size: 18))
-                    .foregroundColor(NNColour.textPrimary.opacity(0.9))
-                    .kerning(0.3)
-                    .opacity(dissolveTriggered ? 0 : 1)
-                    .offset(y: dissolveTriggered ? -12 : 0)
-                    .animation(.easeIn(duration: 0.3).delay(Double(index) * stagger), value: dissolveTriggered)
+    private var micButton: some View {
+        Button(action: toggleRecording) {
+            Image(systemName: speechRecogniser.isRecording ? "stop.fill" : "mic.fill")
+                .font(.system(size: 20))
+                .foregroundColor(.white.opacity(speechRecogniser.isRecording ? 0.7 : 0.25))
+                .shadow(color: speechRecogniser.isRecording ? NNColour.orbRose.opacity(0.5) : .clear, radius: 12)
+                .scaleEffect(speechRecogniser.isRecording ? 1.08 : 1.0)
+                .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: speechRecogniser.isRecording)
+        }
+        .padding(.trailing, 4)
+    }
+
+    private func toggleRecording() {
+        if speechRecogniser.isRecording {
+            speechRecogniser.stopRecording()
+        } else {
+            micPermissionDenied = false
+            speechRecogniser.startRecording { denied in
+                if denied {
+                    withAnimation(.easeIn(duration: 0.3)) { micPermissionDenied = true }
+                }
             }
         }
     }
@@ -266,7 +299,7 @@ struct DreamEntryView: View {
                 .tracking(4)
                 .foregroundColor(NNColour.textPrimary.opacity(0.25))
                 .opacity(revealFading ? 0 : 1)
-                .animation(.easeInOut(duration: 0.4), value: revealFading)
+                .animation(.easeInOut(duration: 0.3), value: revealFading)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, textFocused ? 12 : 28)
@@ -290,23 +323,24 @@ struct DreamEntryView: View {
     // ─────────────────────────────────────────
 
     private func startDissolve() {
+        // Stop recording if active
+        if speechRecogniser.isRecording { speechRecogniser.stopRecording() }
+
         textFocused = false
         dissolving = true
-        revealGlowing = true
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            dissolveTriggered = true
+        // 1. Fade dream text as one block
+        withAnimation(.easeIn(duration: 0.7)) {
+            dissolveFaded = true
         }
 
-        let words = dreamText.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
-        let stagger = min(0.06, 1.2 / Double(max(words.count, 1)))
-        let totalTime = Double(words.count) * stagger + 0.3
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05 + totalTime) {
+        // 2. Fade Reveal button
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             revealFading = true
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05 + totalTime + 0.4) {
+        // 3. Transition to thinking screen after text fades
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
             Task { await handleReveal() }
         }
     }
@@ -357,7 +391,7 @@ struct DreamEntryView: View {
             .padding(.bottom, 16)
 
             // Label
-            Text("Reading the feeling beneath it…")
+            Text("Reading the feeling beneath it\u{2026}")
                 .font(NNFont.ui(8))
                 .tracking(4)
                 .foregroundColor(NNColour.textPrimary.opacity(thinkingLabelPulse ? 0.4 : 0.22))
@@ -415,7 +449,7 @@ struct DreamEntryView: View {
         guard let userId = auth.user?.id else {
             let _ = await auth.recoverUser()
             guard let userId = auth.user?.id else {
-                errorMessage = "Session expired — please sign out and back in"
+                errorMessage = "Session expired \u{2014} please sign out and back in"
                 resetDissolveState()
                 return
             }
@@ -496,8 +530,7 @@ struct DreamEntryView: View {
 
     private func resetDissolveState() {
         dissolving = false
-        dissolveTriggered = false
-        revealGlowing = false
+        dissolveFaded = false
         revealFading = false
     }
 
@@ -526,7 +559,7 @@ struct DreamEntryView: View {
 
     private func timeLabel() -> String {
         let f = DateFormatter()
-        f.dateFormat = "h:mm a · EEEE"
+        f.dateFormat = "h:mm a \u{00B7} EEEE"
         return f.string(from: Date()).lowercased()
     }
 
@@ -577,37 +610,4 @@ struct DreamEntryView: View {
         "They were there but wouldn\u{2019}t look at me.",
         "I knew I was dreaming but couldn\u{2019}t wake up.",
     ]
-}
-
-// ─────────────────────────────────────────
-// MARK: - Word Flow Layout
-// ─────────────────────────────────────────
-
-struct WordFlowLayout: Layout {
-    var spacing: CGFloat = 5
-    var lineSpacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxW = proposal.width ?? .infinity
-        var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
-        for sub in subviews {
-            let s = sub.sizeThatFits(.unspecified)
-            if x + s.width > maxW && x > 0 { x = 0; y += rowH + lineSpacing; rowH = 0 }
-            rowH = max(rowH, s.height)
-            x += s.width + spacing
-        }
-        return CGSize(width: maxW, height: y + rowH)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let maxW = bounds.width
-        var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
-        for sub in subviews {
-            let s = sub.sizeThatFits(.unspecified)
-            if x + s.width > maxW && x > 0 { x = 0; y += rowH + lineSpacing; rowH = 0 }
-            sub.place(at: CGPoint(x: bounds.minX + x, y: bounds.minY + y), proposal: .unspecified)
-            rowH = max(rowH, s.height)
-            x += s.width + spacing
-        }
-    }
 }

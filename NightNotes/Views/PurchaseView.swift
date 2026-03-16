@@ -53,8 +53,8 @@ struct PurchaseView: View {
 
                     subscriptionOptions
 
-                    // Error display
-                    if showError {
+                    // Error display (only when products loaded but purchase failed)
+                    if !loadTimedOut && showError {
                         Text("Something went wrong. Please try again.")
                             .font(NNFont.ui(11))
                             .foregroundColor(NNColour.orbRose.opacity(0.7))
@@ -108,6 +108,12 @@ struct PurchaseView: View {
                     if !hasProducts {
                         withAnimation { loadTimedOut = true }
                     }
+                }
+            }
+            .onChange(of: purchase.productsLoaded) { loaded in
+                if loaded {
+                    let hasProducts = purchase.yearlyProduct != nil || purchase.monthlyProduct != nil
+                    if hasProducts { withAnimation { loadTimedOut = false } }
                 }
             }
             .onChange(of: purchase.isSubscribed) { subscribed in
