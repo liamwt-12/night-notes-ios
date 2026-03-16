@@ -205,7 +205,7 @@ struct ReflectionView: View {
                     }
                 }
                 .padding(.horizontal, 26)
-                .padding(.bottom, 44)
+                .padding(.bottom, 80)
                 .background(
                     LinearGradient(
                         colors: [NNColour.void.opacity(0), NNColour.void.opacity(0.85), NNColour.void.opacity(0.95)],

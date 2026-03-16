@@ -147,7 +147,7 @@ struct JournalView: View {
         }
         .padding(.horizontal, 26)
         .padding(.top, 56)
-        .padding(.bottom, 32)
+        .padding(.bottom, 80)
     }
 
     // ─────────────────────────────────────────
