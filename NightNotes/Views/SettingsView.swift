@@ -5,6 +5,7 @@ struct SettingsView: View {
     @EnvironmentObject var auth:    AuthManager
     @EnvironmentObject var purchase: PurchaseManager
     @State private var showDreamerTypePicker = false
+    @State private var showPaywall = false
     @State private var morningReminderEnabled = UserDefaults.standard.bool(forKey: "morningReminderEnabled")
     @AppStorage("reminderHour") private var reminderHour = 8
     @AppStorage("reminderMinute") private var reminderMinute = 0
@@ -26,22 +27,47 @@ struct SettingsView: View {
 
                 settingsSection("Subscription") {
                     if purchase.isSubscribed {
-                        HStack {
-                            GlowOrb(colour: NNColour.orbAmber, size: 7, animate: false)
-                            Text("Active")
-                                .font(.custom("PlayfairDisplay-Italic", size: 16))
-                                .foregroundColor(NNColour.textPrimary.opacity(0.7))
-                            Spacer()
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                GlowOrb(colour: NNColour.orbAmber, size: 7, animate: false)
+                                Text("Night Notes Pro \u{00B7} Active")
+                                    .font(.custom("PlayfairDisplay-Italic", size: 16))
+                                    .foregroundColor(NNColour.textPrimary.opacity(0.7))
+                                Spacer()
+                            }
+                            Link(destination: URL(string: "https://apps.apple.com/account/subscriptions")!) {
+                                Text("Manage subscription")
+                                    .font(NNFont.ui(10))
+                                    .tracking(2)
+                                    .foregroundColor(NNColour.textPrimary.opacity(0.4))
+                            }
                         }
                         .padding(.vertical, 14)
                     } else {
-                        HStack {
-                            let used = auth.user?.freeInterpretationsUsed ?? 0
-                            let remaining = max(0, 7 - used)
-                            Text("\(remaining) free dream\(remaining == 1 ? "" : "s") remaining")
-                                .font(.custom("PlayfairDisplay-Italic", size: 16))
-                                .foregroundColor(NNColour.textPrimary.opacity(0.7))
-                            Spacer()
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                let used = auth.user?.freeInterpretationsUsed ?? 0
+                                let remaining = max(0, 7 - used)
+                                Text("\(remaining) free dream\(remaining == 1 ? "" : "s") remaining")
+                                    .font(.custom("PlayfairDisplay-Italic", size: 16))
+                                    .foregroundColor(NNColour.textPrimary.opacity(0.7))
+                                Spacer()
+                            }
+
+                            Button(action: { showPaywall = true }) {
+                                Text("Unlock Night Notes Pro")
+                                    .font(.custom("PlayfairDisplay-Italic", size: 17))
+                                    .foregroundColor(NNColour.textPrimary.opacity(0.85))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(NNColour.glassLight)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(NNColour.orbRose.opacity(0.4), lineWidth: 1)
+                                    )
+                                    .cornerRadius(12)
+                                    .shadow(color: NNColour.orbRose.opacity(0.15), radius: 12)
+                            }
                         }
                         .padding(.vertical, 14)
                     }
@@ -114,6 +140,7 @@ struct SettingsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showDreamerTypePicker) { DreamerTypePickerSheet() }
+        .sheet(isPresented: $showPaywall) { PurchaseView() }
         .onAppear { Task { await purchase.updateSubscriptionStatus() } }
     }
 

@@ -253,23 +253,13 @@ struct DreamEntryView: View {
                 .frame(width: 40, height: 0.5)
                 .padding(.bottom, 8)
 
-            ZStack {
-                // Hollow outline — BoldItalic for correct letterform
-                ZStack {
-                    Text("Reveal")
-                        .font(.custom("PlayfairDisplay-BoldItalic", size: 56))
-                        .foregroundColor(.white.opacity(0.5))
-                        .blur(radius: 1)
-                    Text("Reveal")
-                        .font(.custom("PlayfairDisplay-BoldItalic", size: 56))
-                        .foregroundColor(Color(hex: "0b0717").opacity(0.85))
-                }
-                .shadow(color: .white.opacity(0.15), radius: revealGlowing ? 28 : 18)
-                .shadow(color: Color(red: 0.77, green: 0.37, blue: 0.67).opacity(revealGlowing ? 0.7 : 0.45), radius: revealGlowing ? 28 : 18)
-                .animation(.easeInOut(duration: 0.3), value: revealGlowing)
-            }
-            .opacity(revealFading ? 0 : 1)
-            .animation(.easeInOut(duration: 0.4), value: revealFading)
+            Text("Reveal")
+                .font(.custom("PlayfairDisplay-Italic", size: 52))
+                .foregroundColor(.white.opacity(0.32))
+                .shadow(color: .white.opacity(0.15), radius: 8)
+                .shadow(color: Color(red: 0.77, green: 0.37, blue: 0.67).opacity(0.35), radius: 20)
+                .opacity(revealFading ? 0 : 1)
+                .animation(.easeInOut(duration: 0.4), value: revealFading)
 
             Text("What was hiding inside it?")
                 .font(NNFont.ui(9))
@@ -479,6 +469,16 @@ struct DreamEntryView: View {
                 withAnimation(.easeInOut(duration: 1.6)) {
                     auroraScale = 1.0
                     thinkingBloomBoost = 0
+                }
+            } catch InterpretError.noInterpretationsRemaining {
+                await MainActor.run {
+                    showPaywall = true
+                    withAnimation(.easeInOut(duration: 0.5)) { phase = .entry }
+                    auroraScale = 1.0
+                    auroraBrightness = 0
+                    typingBrightness = 0
+                    thinkingBloomBoost = 0
+                    resetDissolveState()
                 }
             } catch {
                 await MainActor.run {

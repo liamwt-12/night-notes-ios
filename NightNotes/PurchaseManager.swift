@@ -13,7 +13,8 @@ class PurchaseManager: ObservableObject {
     @Published var monthlyProduct: Product?
     @Published var yearlyProduct: Product?
     @Published var isSubscribed = false
-    @Published var isPurchasing = false
+    @Published var purchasingMonthly = false
+    @Published var purchasingYearly = false
     @Published var error: String?
 
     private let monthlyId = "uk.nightnotes.subscription.monthly"
@@ -54,7 +55,9 @@ class PurchaseManager: ObservableObject {
 
     func purchaseMonthly() async {
         guard let product = monthlyProduct else { return }
+        purchasingMonthly = true
         await purchase(product)
+        purchasingMonthly = false
     }
 
     // ─────────────────────────────────────────
@@ -63,11 +66,12 @@ class PurchaseManager: ObservableObject {
 
     func purchaseYearly() async {
         guard let product = yearlyProduct else { return }
+        purchasingYearly = true
         await purchase(product)
+        purchasingYearly = false
     }
 
     private func purchase(_ product: Product) async {
-        isPurchasing = true
         do {
             let result = try await product.purchase()
             switch result {
@@ -85,22 +89,25 @@ class PurchaseManager: ObservableObject {
         } catch {
             self.error = error.localizedDescription
         }
-        isPurchasing = false
     }
 
     // ─────────────────────────────────────────
     // MARK: - Restore
     // ─────────────────────────────────────────
 
+    var isPurchasing: Bool { purchasingMonthly || purchasingYearly }
+
     func restorePurchases() async {
-        isPurchasing = true
+        purchasingMonthly = true
+        purchasingYearly = true
         do {
             try await AppStore.sync()
             await updateSubscriptionStatus()
         } catch {
             self.error = error.localizedDescription
         }
-        isPurchasing = false
+        purchasingMonthly = false
+        purchasingYearly = false
     }
 
     // ─────────────────────────────────────────

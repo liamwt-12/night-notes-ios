@@ -37,6 +37,9 @@ struct InterpretationEngine {
         }
 
         guard (200...299).contains(http.statusCode) else {
+            if http.statusCode == 403 {
+                throw InterpretError.noInterpretationsRemaining
+            }
             let body = String(data: data, encoding: .utf8) ?? "empty"
             throw InterpretError.serverError("HTTP \(http.statusCode): \(body)")
         }
@@ -69,12 +72,14 @@ enum InterpretError: LocalizedError {
     case noSession(String)
     case serverError(String)
     case noContent
+    case noInterpretationsRemaining
 
     var errorDescription: String? {
         switch self {
         case .noSession(let msg):   return "Session: \(msg)"
         case .serverError(let msg): return "Error: \(msg)"
         case .noContent:            return "Empty response."
+        case .noInterpretationsRemaining: return "No interpretations remaining."
         }
     }
 }
