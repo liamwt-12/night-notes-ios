@@ -71,9 +71,17 @@ enum DreamerType: String, Codable, CaseIterable {
 
     var extendedLabel: String {
         switch self {
-        case .vivid:     return "Vivid dreams"
-        case .recurring: return "Recurring dreams"
-        case .fragments: return "Just fragments"
+        case .vivid:     return "In full detail"
+        case .recurring: return "The same ones, again"
+        case .fragments: return "Just the feeling"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .vivid:     return "You remember places, faces, whole stories."
+        case .recurring: return "Certain dreams keep returning."
+        case .fragments: return "An emotion, a colour, a fragment."
         }
     }
     var systemPromptNote: String {
