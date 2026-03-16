@@ -33,7 +33,10 @@ class PurchaseManager: ObservableObject {
     // MARK: - Load Products
     // ─────────────────────────────────────────
 
+    @Published var productsLoaded = false
+
     func loadProducts() async {
+        productsLoaded = false
         do {
             let products = try await Product.products(for: [monthlyId, yearlyId])
             for product in products {
@@ -46,6 +49,7 @@ class PurchaseManager: ObservableObject {
         } catch {
             print("❌ Product load error: \(error)")
         }
+        productsLoaded = true
         await updateSubscriptionStatus()
     }
 

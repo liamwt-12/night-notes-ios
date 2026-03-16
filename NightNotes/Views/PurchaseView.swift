@@ -5,6 +5,7 @@ struct PurchaseView: View {
     @Environment(\.dismiss) var dismiss
     @State private var appeared = false
     @State private var showError = false
+    @State private var loadTimedOut = false
 
     var body: some View {
         ZStack {
@@ -100,7 +101,14 @@ struct PurchaseView: View {
             .opacity(appeared ? 1 : 0)
             .onAppear {
                 withAnimation(.easeOut(duration: 0.6)) { appeared = true }
+                loadTimedOut = false
                 Task { await purchase.loadProducts() }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
+                    let hasProducts = purchase.yearlyProduct != nil || purchase.monthlyProduct != nil
+                    if !hasProducts {
+                        withAnimation { loadTimedOut = true }
+                    }
+                }
             }
             .onChange(of: purchase.isSubscribed) { subscribed in
                 if subscribed { dismiss() }
@@ -225,6 +233,35 @@ struct PurchaseView: View {
                     .disabled(purchase.purchasingMonthly)
                 }
             }
+        } else if loadTimedOut {
+            VStack(spacing: 14) {
+                Text("Couldn\u{2019}t load pricing. Please try again.")
+                    .font(NNFont.ui(12))
+                    .foregroundColor(NNColour.orbRose.opacity(0.7))
+                    .multilineTextAlignment(.center)
+
+                Button(action: {
+                    withAnimation { loadTimedOut = false }
+                    Task { await purchase.loadProducts() }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
+                        let hasProducts = purchase.yearlyProduct != nil || purchase.monthlyProduct != nil
+                        if !hasProducts {
+                            withAnimation { loadTimedOut = true }
+                        }
+                    }
+                }) {
+                    Text("Retry")
+                        .font(NNFont.ui(11))
+                        .tracking(2)
+                        .foregroundColor(NNColour.textPrimary.opacity(0.6))
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(NNColour.glassLight)
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(NNColour.glassBorder, lineWidth: 1))
+                        .cornerRadius(10)
+                }
+            }
+            .frame(maxWidth: .infinity)
         } else {
             ProgressView()
                 .progressViewStyle(.circular)
