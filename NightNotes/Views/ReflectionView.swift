@@ -24,9 +24,6 @@ struct ReflectionView: View {
     @AppStorage("positiveRatings") private var positiveRatings = 0
     @AppStorage("hasRequestedReview") private var hasRequestedReview = false
 
-    // Doppelgänger
-    @State private var doppelgangerVisible = false
-
     private var interpretationWords: [String] {
         interpretation.components(separatedBy: " ")
     }
@@ -165,23 +162,11 @@ struct ReflectionView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.bottom, 32)
 
-                                // Dream Doppelgänger
-                                if doppelgangerVisible {
-                                    doppelgangerSection
-                                        .transition(.opacity)
-                                        .padding(.bottom, 32)
-                                }
-
                                 Spacer().frame(height: 120)
                             }
                         }
                         .onAppear {
                             proxy.scrollTo("top", anchor: .top)
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                withAnimation(.easeOut(duration: 0.4)) {
-                                    doppelgangerVisible = true
-                                }
-                            }
                         }
                     }
                     .transition(.opacity)
@@ -232,73 +217,6 @@ struct ReflectionView: View {
                 SharePreviewSheet(image: image)
             }
         }
-    }
-
-    // ─────────────────────────────────────────
-    // MARK: - Dream Doppelgänger
-    // ─────────────────────────────────────────
-
-    private var doppelgangerSection: some View {
-        let theme = detectTheme(from: dream.rawText)
-        let snippets = doppelgangerSnippets(for: theme)
-
-        return VStack(alignment: .leading, spacing: 12) {
-            Text("OTHERS DREAMED THIS TOO")
-                .font(NNFont.ui(9))
-                .tracking(6)
-                .foregroundColor(NNColour.textPrimary.opacity(0.4))
-                .padding(.bottom, 4)
-
-            ForEach(Array(snippets.enumerated()), id: \.offset) { idx, snippet in
-                DoppelgangerCard(snippet: snippet, delay: Double(idx) * 0.1)
-            }
-        }
-    }
-
-    private func detectTheme(from text: String) -> String {
-        let lower = text.lowercased()
-        if lower.contains("chased") || lower.contains("running") || lower.contains("followed") { return "pursuit" }
-        if lower.contains("falling") || lower.contains("fell") || lower.contains("dropped") { return "falling" }
-        if lower.contains("flying") || lower.contains("float") || lower.contains("soar") { return "flying" }
-        if lower.contains("teeth") || lower.contains("tooth") { return "teeth" }
-        if lower.contains("water") || lower.contains("ocean") || lower.contains("sea") || lower.contains("flood") { return "water" }
-        if lower.contains("house") || lower.contains("room") || lower.contains("building") || lower.contains("home") { return "house" }
-        if lower.contains("late") || lower.contains("exam") || lower.contains("test") || lower.contains("school") { return "anxiety" }
-        return "general"
-    }
-
-    private func doppelgangerSnippets(for theme: String) -> [(initial: String, text: String)] {
-        let pool: [String]
-        switch theme {
-        case "pursuit":
-            pool = ["Being chased by something I couldn't see.", "Running but my legs wouldn't move properly.", "Trying to escape but the exits kept moving.", "Something was following me through empty streets."]
-        case "falling":
-            pool = ["Falling from somewhere very high.", "The ground kept getting further away.", "Stepped off something and couldn't stop.", "That jolt as I hit the bottom and woke up."]
-        case "flying":
-            pool = ["I could fly but only just above the ground.", "Flying over my hometown at night.", "Floating without trying, then suddenly afraid of it.", "The feeling of lift just before I woke."]
-        case "teeth":
-            pool = ["All my teeth came loose at once.", "Looked in the mirror and they were crumbling.", "Trying to speak but kept losing teeth.", "The dentist dream again."]
-        case "water":
-            pool = ["A wave I couldn't outrun.", "Swimming somewhere I didn't recognise.", "The water was completely still and very deep.", "Floods rising slowly outside the window."]
-        case "house":
-            pool = ["A house with rooms I'd never seen before.", "My childhood home but all wrong.", "Corridors that kept extending.", "A door I was afraid to open."]
-        case "anxiety":
-            pool = ["Completely unprepared for something important.", "Late for something I couldn't remember.", "The exam was in a language I didn't know.", "Everyone else seemed to know what was happening."]
-        default:
-            pool = ["Something I can't quite describe.", "A feeling more than a story.", "Someone I knew but couldn't name.", "A place that felt familiar but wasn't."]
-        }
-
-        let initials = ["A", "M", "J", "S", "R", "E", "L", "T"]
-        // Deterministic selection based on dream ID
-        let seed = dream.id.hashValue
-        let idx1 = abs(seed) % pool.count
-        var idx2 = abs(seed / 7) % pool.count
-        if idx2 == idx1 { idx2 = (idx1 + 1) % pool.count }
-
-        return [
-            (initial: initials[abs(seed) % initials.count], text: pool[idx1]),
-            (initial: initials[abs(seed / 3) % initials.count], text: pool[idx2])
-        ]
     }
 
     // ─────────────────────────────────────────
@@ -383,53 +301,6 @@ struct ReflectionView: View {
         hasRequestedReview = true
         if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
             SKStoreReviewController.requestReview(in: scene)
-        }
-    }
-}
-
-// ─────────────────────────────────────────
-// MARK: - Doppelgänger Card
-// ─────────────────────────────────────────
-
-struct DoppelgangerCard: View {
-    let snippet: (initial: String, text: String)
-    let delay: Double
-    @State private var appeared = false
-
-    var body: some View {
-        HStack(spacing: 14) {
-            // Avatar
-            Circle()
-                .fill(.ultraThinMaterial)
-                .frame(width: 32, height: 32)
-                .overlay(
-                    Text(snippet.initial)
-                        .font(NNFont.ui(12))
-                        .foregroundColor(NNColour.textPrimary.opacity(0.6))
-                )
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(snippet.text)
-                    .font(.custom("PlayfairDisplay-Italic", size: 13))
-                    .foregroundColor(NNColour.textPrimary.opacity(0.7))
-                    .kerning(0.3)
-                    .lineLimit(2)
-                Text("this week")
-                    .font(NNFont.ui(9))
-                    .foregroundColor(NNColour.textPrimary.opacity(0.35))
-            }
-
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(.ultraThinMaterial)
-        .cornerRadius(12)
-        .opacity(appeared ? 1 : 0)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                withAnimation(.easeOut(duration: 0.4)) { appeared = true }
-            }
         }
     }
 }
