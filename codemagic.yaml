@@ -36,7 +36,7 @@ workflows:
 
       - name: Set build number
         script: |
-          agvtool new-version -all 26
+          agvtool new-version -all 27
 
       - name: Build IPA
         script: |

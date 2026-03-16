@@ -28,7 +28,7 @@ class SpeechRecogniser: ObservableObject {
     }
 
     private func requestMicAndStart(onPermissionDenied: @escaping (Bool) -> Void) {
-        AVAudioApplication.requestRecordPermission { [weak self] granted in
+        AVAudioSession.sharedInstance().requestRecordPermission { [weak self] granted in
             Task { @MainActor in
                 guard let self else { return }
                 if granted {

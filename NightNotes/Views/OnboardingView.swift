@@ -499,15 +499,8 @@ struct SignInScreen: View {
                             isSigningIn = true
                             errorMessage = nil
                             Task {
-                                do {
-                                    await self.auth.signInWithApple(credential: appleId)
-                                    if let type = selectedType { await self.auth.saveDreamerType(type) }
-                                } catch {
-                                    await MainActor.run {
-                                        errorMessage = "Something went wrong. Please try again."
-                                        isSigningIn = false
-                                    }
-                                }
+                                await self.auth.signInWithApple(credential: appleId)
+                                if let type = selectedType { await self.auth.saveDreamerType(type) }
                             }
                         case .failure:
                             errorMessage = "Something went wrong. Please try again."
