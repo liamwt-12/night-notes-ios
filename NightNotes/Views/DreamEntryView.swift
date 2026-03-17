@@ -30,6 +30,8 @@ struct DreamEntryView: View {
     // Voice input
     @StateObject private var speechRecogniser = SpeechRecogniser()
     @State private var micPermissionDenied = false
+    @State private var waveTime: Double = 0
+    @State private var waveTimer: Timer?
 
     var body: some View {
         ZStack {
@@ -123,7 +125,7 @@ struct DreamEntryView: View {
 
                     Text(speechRecogniser.isRecording ? "Listening\u{2026}" : "Before it fades\u{2026}")
                         .font(.custom("PlayfairDisplay-Italic", size: 10))
-                        .foregroundColor(NNColour.textPrimary.opacity(speechRecogniser.isRecording ? 0.4 : 0.22))
+                        .foregroundColor(NNColour.textPrimary.opacity(0.40))
                         .opacity(showWhisper ? 1 : 0)
                         .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: speechRecogniser.isRecording)
                         .padding(.bottom, 8)
@@ -133,14 +135,14 @@ struct DreamEntryView: View {
                         if dreamText.isEmpty {
                             Text("Write what you remember\u{2026}")
                                 .font(.custom("PlayfairDisplay-Italic", size: 16))
-                                .foregroundColor(NNColour.textPrimary.opacity(0.28))
+                                .foregroundColor(NNColour.textPrimary.opacity(0.38))
                                 .kerning(0.3)
                                 .padding(.top, 2)
                                 .allowsHitTesting(false)
                         }
                         TextEditor(text: $dreamText)
                             .font(.custom("PlayfairDisplay-Italic", size: 18))
-                            .foregroundColor(NNColour.textPrimary.opacity(0.9))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.82))
                             .scrollContentBackground(.hidden)
                             .background(Color.clear)
                             .focused($textFocused)
@@ -156,7 +158,7 @@ struct DreamEntryView: View {
             )
 
             // Bottom pinned section
-            VStack(spacing: 12) {
+            VStack(spacing: 0) {
                 if textFocused {
                     Hairline()
                     Button(action: { textFocused = false }) {
@@ -169,11 +171,10 @@ struct DreamEntryView: View {
                     }
                 }
 
-                // Mic button
-                HStack {
-                    Spacer()
-                    micButton
-                }
+                // Mic button (centred above reveal)
+                micButton
+                    .padding(.top, 24)
+                    .padding(.bottom, 16)
 
                 revealButton
 
@@ -220,6 +221,19 @@ struct DreamEntryView: View {
                 dreamText = newTranscript
             }
         }
+        .onChange(of: speechRecogniser.isRecording) { recording in
+            if recording {
+                waveTime = 0
+                waveTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+                    DispatchQueue.main.async {
+                        waveTime += 0.05
+                    }
+                }
+            } else {
+                waveTimer?.invalidate()
+                waveTimer = nil
+            }
+        }
     }
 
     // ─────────────────────────────────────────
@@ -228,14 +242,29 @@ struct DreamEntryView: View {
 
     private var micButton: some View {
         Button(action: toggleRecording) {
-            Image(systemName: speechRecogniser.isRecording ? "stop.fill" : "mic.fill")
-                .font(.system(size: 20))
-                .foregroundColor(.white.opacity(speechRecogniser.isRecording ? 0.7 : 0.25))
-                .shadow(color: speechRecogniser.isRecording ? NNColour.orbRose.opacity(0.5) : .clear, radius: 12)
-                .scaleEffect(speechRecogniser.isRecording ? 1.08 : 1.0)
-                .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: speechRecogniser.isRecording)
+            if speechRecogniser.isRecording {
+                HStack(spacing: 5) {
+                    ForEach(0..<5, id: \.self) { i in
+                        let params: [(Double, Double)] = [
+                            (3.2, 0.0),
+                            (2.8, 0.5),
+                            (3.8, 1.0),
+                            (2.5, 1.5),
+                            (3.5, 0.8)
+                        ]
+                        let height = 4.0 + (sin(waveTime * params[i].0 + params[i].1) + 1.0) * 8.0
+                        RoundedRectangle(cornerRadius: 1.5)
+                            .fill(Color(red: 0.77, green: 0.37, blue: 0.67).opacity(0.7))
+                            .frame(width: 3, height: height)
+                    }
+                }
+                .frame(height: 20)
+            } else {
+                Image(systemName: "mic")
+                    .font(.system(size: 22))
+                    .foregroundColor(.white.opacity(0.3))
+            }
         }
-        .padding(.trailing, 4)
     }
 
     private func toggleRecording() {
@@ -450,6 +479,8 @@ struct DreamEntryView: View {
         thinkingProgress = 0
         progressTimer?.invalidate()
         progressTimer = nil
+        waveTimer?.invalidate()
+        waveTimer = nil
         phase = .entry
         showWhisper = true
     }
