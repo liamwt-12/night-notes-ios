@@ -187,16 +187,16 @@ struct ReflectionView: View {
                 VStack(spacing: 12) {
                     Button(action: { withAnimation { landingPhase = true } }) {
                         Text("Did this feel right?")
-                            .font(NNFont.ui(11))
-                            .tracking(3)
-                            .foregroundColor(NNColour.textPrimary.opacity(0.70))
+                            .font(.custom("PlayfairDisplay-Italic", size: 20))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.88))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 18)
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(NNColour.glassBorder, lineWidth: 0.5))
+                            .background(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.10))
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.35), lineWidth: 1.5))
                             .cornerRadius(14)
                     }
-                    .padding(.top, 28)
-                    .padding(.bottom, 20)
+                    .padding(.top, 48)
+                    .padding(.bottom, 32)
                     Button(action: onNewDream) {
                         Text("New dream")
                             .font(NNFont.ui(12))

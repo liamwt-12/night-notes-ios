@@ -287,15 +287,15 @@ struct DreamEntryView: View {
         return VStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 50)
-                    .fill(Color.white.opacity(0.07))
-                    .frame(width: 200, height: 56)
+                    .fill(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.10))
+                    .frame(width: 220, height: 56)
                     .overlay(
                         RoundedRectangle(cornerRadius: 50)
-                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                            .stroke(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.35), lineWidth: 1.5)
                     )
                 Text("Reveal")
                     .font(.custom("PlayfairDisplay-Italic", size: 26))
-                    .foregroundColor(.white.opacity(0.75))
+                    .foregroundColor(.white.opacity(0.88))
             }
 
             Text("What was hiding inside it?")
