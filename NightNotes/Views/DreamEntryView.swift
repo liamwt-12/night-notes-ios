@@ -407,6 +407,7 @@ struct DreamEntryView: View {
     private func handleReveal() async {
         let trimmed = dreamText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        await auth.refreshProfile()
         if let user = auth.user, !user.canInterpret {
             showPaywall = true
             return

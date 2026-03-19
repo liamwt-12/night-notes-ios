@@ -79,7 +79,7 @@ class AuthManager: ObservableObject {
     // ─────────────────────────────────────────
 
     @discardableResult
-    func fetchProfile(userId: UUID, retried: Bool = false) async -> Bool {
+    func fetchProfile(userId: UUID) async -> Bool {
         do {
             let response = try await supabase
                 .from("profiles")
@@ -92,35 +92,8 @@ class AuthManager: ObservableObject {
             return true
         } catch {
             print("❌ fetchProfile error: \(error)")
-
-            // Don't retry more than once to avoid infinite recursion
-            guard !retried else {
-                print("❌ fetchProfile already retried — giving up")
-                self.error = "Could not load profile — please sign out and try again"
-                return false
-            }
-
-            // Profile missing — create a minimal one so the app can function
-            let newProfile = NewProfile(
-                id: userId,
-                email: nil,
-                subscriptionActive: false,
-                freeInterpretationsUsed: 0
-            )
-            do {
-                try await supabase
-                    .from("profiles")
-                    .upsert(newProfile)
-                    .execute()
-
-
-                return await fetchProfile(userId: userId, retried: true)
-            } catch {
-                print("❌ Profile upsert failed — full error object: \(error)")
-                print("❌ Profile upsert failed — localizedDescription: \(error.localizedDescription)")
-                self.error = "Could not load profile — please sign out and try again"
-                return false
-            }
+            self.error = "Could not load profile — please sign out and try again"
+            return false
         }
     }
 
@@ -152,7 +125,7 @@ class AuthManager: ObservableObject {
                     .execute()
 
 
-                return await fetchProfile(userId: userId, retried: true)
+                return await fetchProfile(userId: userId)
             } catch {
                 print("❌ Profile create failed — full error object: \(error)")
                 print("❌ Profile create failed — localizedDescription: \(error.localizedDescription)")
