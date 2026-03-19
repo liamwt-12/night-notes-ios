@@ -69,7 +69,7 @@ struct DreamEntryView: View {
                         Text("night notes")
                             .font(NNFont.ui(11))
                             .tracking(6)
-                            .foregroundColor(NNColour.textPrimary.opacity(0.5))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.40))
                         Spacer()
 
                         if store.currentStreak >= 2 {
@@ -88,7 +88,7 @@ struct DreamEntryView: View {
                             Text("\(user.interpretationsRemaining) dreams left")
                                 .font(NNFont.ui(10))
                                 .tracking(2)
-                                .foregroundColor(NNColour.textPrimary.opacity(0.5))
+                                .foregroundColor(NNColour.textPrimary.opacity(0.65))
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 5)
                                 .background(NNColour.glassLight)
@@ -103,7 +103,7 @@ struct DreamEntryView: View {
                         Text("FROM LAST NIGHT")
                             .font(NNFont.ui(8, weight: .light))
                             .tracking(3)
-                            .foregroundColor(NNColour.textPrimary.opacity(0.28))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.45))
                             .padding(.leading, 2)
                         Text("What did you dream?")
                             .font(NNFont.display(52))
@@ -119,13 +119,13 @@ struct DreamEntryView: View {
                         Text(timeLabel())
                             .font(.custom("PlayfairDisplay-Italic", size: 11))
                             .tracking(2)
-                            .foregroundColor(NNColour.textPrimary.opacity(0.32))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.45))
                     }
                     .padding(.bottom, 14)
 
                     Text(speechRecogniser.isRecording ? "Listening\u{2026}" : "Before it fades\u{2026}")
                         .font(.custom("PlayfairDisplay-Italic", size: 10))
-                        .foregroundColor(NNColour.textPrimary.opacity(0.40))
+                        .foregroundColor(NNColour.textPrimary.opacity(0.55))
                         .opacity(showWhisper ? 1 : 0)
                         .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: speechRecogniser.isRecording)
                         .padding(.bottom, 8)
@@ -135,7 +135,7 @@ struct DreamEntryView: View {
                         if dreamText.isEmpty {
                             Text("Write what you remember\u{2026}")
                                 .font(.custom("PlayfairDisplay-Italic", size: 16))
-                                .foregroundColor(NNColour.textPrimary.opacity(0.38))
+                                .foregroundColor(NNColour.textPrimary.opacity(0.55))
                                 .kerning(0.3)
                                 .padding(.top, 2)
                                 .allowsHitTesting(false)
@@ -301,7 +301,7 @@ struct DreamEntryView: View {
             Text("What was hiding inside it?")
                 .font(NNFont.ui(9))
                 .tracking(4)
-                .foregroundColor(NNColour.textPrimary.opacity(0.2))
+                .foregroundColor(NNColour.textPrimary.opacity(0.35))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, textFocused ? 12 : 28)
@@ -447,6 +447,7 @@ struct DreamEntryView: View {
                 updatedDream.symbols = result.symbols
                 activeDream = updatedDream
                 await store.saveDream(updatedDream)
+                await auth.incrementInterpretationsUsed()
                 await MainActor.run {
                     phase = .reading
                     let delays = [0.0, 0.32, 0.55, 0.74, 1.04]

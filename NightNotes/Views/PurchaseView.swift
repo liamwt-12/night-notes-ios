@@ -184,7 +184,7 @@ struct PurchaseView: View {
                     .disabled(purchase.purchasingYearly)
                 }
 
-                // Monthly with introductory offer support
+                // Monthly
                 if let monthly = purchase.monthlyProduct {
                     Button(action: { Task { await purchase.purchaseMonthly() } }) {
                         HStack {
@@ -216,15 +216,6 @@ struct PurchaseView: View {
                     .disabled(purchase.purchasingMonthly)
                 }
 
-                // Quiet intro offer
-                if purchase.monthlyProduct?.subscription?.introductoryOffer != nil {
-                    Text("New to Night Notes Pro? First month 99p.")
-                        .font(NNFont.ui(11, weight: .ultraLight))
-                        .italic()
-                        .foregroundColor(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.3))
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 10)
-                }
             }
         } else if loadTimedOut {
             VStack(spacing: 14) {

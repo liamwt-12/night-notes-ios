@@ -187,13 +187,13 @@ struct JournalEntryRow: View {
                     Text(dateLabel(dream.createdAt))
                         .font(NNFont.ui(9))
                         .tracking(5)
-                        .foregroundColor(NNColour.textPrimary.opacity(0.25))
+                        .foregroundColor(NNColour.textPrimary.opacity(0.45))
                     Spacer()
                     if let symbol = dream.symbols.first {
                         Text(symbol.uppercased())
                             .font(NNFont.ui(8))
                             .tracking(4)
-                            .foregroundColor(NNColour.textPrimary.opacity(0.2))
+                            .foregroundColor(NNColour.textPrimary.opacity(0.35))
                     }
                 }
                 .padding(.bottom, 10)
@@ -210,7 +210,7 @@ struct JournalEntryRow: View {
                 if let interp = dream.interpretation {
                     Text(firstSentence(interp))
                         .font(NNFont.ui(11, weight: .ultraLight))
-                        .foregroundColor(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.32))
+                        .foregroundColor(Color(red: 240/255, green: 232/255, blue: 255/255).opacity(0.45))
                         .lineLimit(2)
                         .padding(.top, 6)
                 }

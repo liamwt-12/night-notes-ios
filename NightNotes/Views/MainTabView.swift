@@ -43,6 +43,9 @@ struct MainTabView: View {
                 Task { await store.fetchDreams(userId: id) }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            Task { await auth.refreshProfile() }
+        }
     }
 }
 

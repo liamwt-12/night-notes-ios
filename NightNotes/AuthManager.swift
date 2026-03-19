@@ -194,10 +194,21 @@ class AuthManager: ObservableObject {
                 .update(["free_interpretations_used": current + 1])
                 .eq("id", value: userId.uuidString)
                 .execute()
-            user?.freeInterpretationsUsed = current + 1
+            // Re-fetch from Supabase to ensure local count matches server
+            await fetchProfile(userId: userId)
         } catch {
             print("❌ Increment error: \(error)")
         }
+    }
+
+    // ─────────────────────────────────────────
+    // MARK: - Refresh Profile
+    // ─────────────────────────────────────────
+
+    /// Re-fetch the current user's profile from Supabase to sync local state.
+    func refreshProfile() async {
+        guard let userId = user?.id else { return }
+        await fetchProfile(userId: userId)
     }
 
     // ─────────────────────────────────────────
