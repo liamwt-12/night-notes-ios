@@ -104,7 +104,7 @@ struct HeroScreen: View {
                 Text("The other half of your life.")
                     .font(NNFont.display(44))
                     .foregroundColor(NNColour.textPrimary)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Text("Every night your mind tells you something.\nMost mornings you\u{2019}ve already forgotten it.")
                     .font(NNFont.body(14))
@@ -163,7 +163,7 @@ struct DreamerTypeScreen: View {
                 Text("How do your\ndreams arrive?")
                     .font(NNFont.display(44))
                     .foregroundColor(NNColour.textPrimary)
-                    .lineSpacing(-2)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Hairline().padding(.vertical, 8)
 
