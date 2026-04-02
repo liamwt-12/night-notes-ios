@@ -207,6 +207,7 @@ struct DreamEntryView: View {
         .padding(.bottom, keyboardHeight > 0 ? keyboardHeight : 100)
         .onAppear {
             showWhisper = true
+            Task { await auth.refreshProfile() }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { n in
             if let frame = n.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {

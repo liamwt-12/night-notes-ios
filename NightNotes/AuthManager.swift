@@ -158,16 +158,11 @@ class AuthManager: ObservableObject {
     // ─────────────────────────────────────────
 
     func incrementInterpretationsUsed() async {
-        guard let userId = user?.id,
-              let current = user?.freeInterpretationsUsed
-        else { return }
+        guard let userId = user?.id else { return }
         do {
-            try await supabase
-                .from("profiles")
-                .update(["free_interpretations_used": current + 1])
-                .eq("id", value: userId.uuidString)
+            try await supabase.rpc("increment_interpretations_used",
+                                   params: ["user_id": userId.uuidString])
                 .execute()
-            // Re-fetch from Supabase to ensure local count matches server
             await fetchProfile(userId: userId)
         } catch {
             print("❌ Increment error: \(error)")
